@@ -7,12 +7,13 @@ import { getStorage } from "firebase/storage";
 
 // 🔐 Configuration Firebase - à personnaliser avec ton propre projet
 const firebaseConfig = {
-  apiKey: "TA_CLÉ_API",
-  authDomain: "TON_DOMAINE.firebaseapp.com",
-  projectId: "TON_PROJECT_ID",
-  storageBucket: "TON_BUCKET.appspot.com",
-  messagingSenderId: "TON_SENDER_ID",
-  appId: "TON_APP_ID",
+  apiKey: "AIzaSyC4TbP5sHlzzPgBa04NpiaQBnMnDJxfojQ",
+  authDomain: "nat-voyage-a37f0.firebaseapp.com",
+  projectId: "nat-voyage-a37f0",
+  storageBucket: "nat-voyage-a37f0.firebasestorage.app",
+  messagingSenderId: "914678441346",
+  appId: "1:914678441346:web:bc1368b92c5e96fad4db9b",
+  measurementId: "G-7VH2TH08WR",
 };
 
 // ⚙️ Initialisation de l'app Firebase

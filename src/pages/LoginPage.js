@@ -15,7 +15,15 @@ export default function LoginPage() {
       await signInWithEmailAndPassword(auth, email, password);
       navigate("/dashboard");
     } catch (err) {
-      alert("Échec de connexion : " + err.message);
+      if (err.code === "auth/invalid-credential") {
+        alert("Échec de connexion : utilisateur non trouvé");
+      } else if (err.code === "auth/wrong-password") {
+        alert("Échec de connexion : mot de passe incorrect");
+      } else if (err.code === "auth/invalid-email") {
+        alert("Échec de connexion : adresse email invalide");
+      } else {
+        alert(`Échec de connexion : ${err.message}`);
+      }
     }
   };
 

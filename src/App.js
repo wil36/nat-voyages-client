@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext"; // ✅ Le provider
 import LoginPage from "./pages/LoginPage";
 import Dashboard from "./pages/Dashboard";
+import DetailVoyage from "./pages/DetailVoyage";
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Routes>
           <Route path="/" element={<LoginPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/detail-voyage/:id" element={<DetailVoyage />} />
         </Routes>
       </Router>
     </AuthProvider>

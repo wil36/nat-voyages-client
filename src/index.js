@@ -5,6 +5,11 @@ import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../src/assets/css/dashlite.css";
+import "../src/assets/css/theme.css";
+import "datatables.net-bs5";
+import "datatables.net-responsive-bs5";
+import "../src/assets/js/bundle.js";
+// import "../src/assets/js/scripts.js";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(

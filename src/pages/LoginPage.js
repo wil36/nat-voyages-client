@@ -13,7 +13,7 @@ export default function LoginPage() {
     e.preventDefault();
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      navigate("/dashboard");
+      navigate("/");
     } catch (err) {
       if (err.code === "auth/invalid-credential") {
         alert("Échec de connexion : utilisateur non trouvé");
@@ -25,6 +25,10 @@ export default function LoginPage() {
         alert(`Échec de connexion : ${err.message}`);
       }
     }
+  };
+
+  const handleNavigationSignup = () => {
+    navigate("/signup");
   };
 
   return (
@@ -121,7 +125,7 @@ export default function LoginPage() {
                   <div className="form-note-s2 text-center pt-4">
                     {" "}
                     Nouveau sur notre plateform ?{" "}
-                    <a href="html/pages/auths/auth-register-v2.html">
+                    <a href="#" onClick={handleNavigationSignup}>
                       Créer un compte
                     </a>
                   </div>

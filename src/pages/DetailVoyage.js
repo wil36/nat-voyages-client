@@ -1,8 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import NavBarComponent from "../components/NavBarComponent";
+import { useNavigate } from "react-router-dom";
+import FooterComponent from "../components/FooterComponent";
 
 export default function DetailVoyage() {
+  const navigate = useNavigate();
+  const handleBackNavigation = () => {
+    navigate("/");
+  };
   return (
     <div className="nk-body bg-lighter npc-default has-sidebar ">
       <div className="nk-app-root">
@@ -14,7 +20,7 @@ export default function DetailVoyage() {
             {/* main header @e */}
             {/* content @s */}
             <div className="nk-content ">
-              <div className="container-fluid">
+              <div className="container">
                 <div className="nk-content-inner">
                   <div className="nk-content-body">
                     <div className="nk-block-head nk-block-head-sm">
@@ -41,16 +47,19 @@ export default function DetailVoyage() {
                             </ul>
                           </div>
                         </div>
-                        <div className="nk-block-head-content">
+                        <div
+                          className="nk-block-head-content"
+                          onClick={handleBackNavigation}
+                        >
                           <a
-                            href="/dashboard"
+                            href="#"
                             className="btn btn-outline-light bg-white d-none d-sm-inline-flex"
                           >
                             <em className="icon ni ni-arrow-left" />
                             <span>Retour</span>
                           </a>
                           <a
-                            href="html/user-list-regular.html"
+                            href="#"
                             className="btn btn-icon btn-outline-light bg-white d-inline-flex d-sm-none"
                           >
                             <em className="icon ni ni-arrow-left" />
@@ -543,38 +552,7 @@ export default function DetailVoyage() {
             </div>
             {/* content @e */}
             {/* footer @s */}
-            <div className="nk-footer">
-              <div className="container-fluid">
-                <div className="nk-footer-wrap">
-                  <div className="nk-footer-copyright">
-                    {" "}
-                    © 2020 DashLite. Template by{" "}
-                    <a href="https://softnio.com" target="_blank">
-                      Softnio
-                    </a>
-                  </div>
-                  <div className="nk-footer-links">
-                    <ul className="nav nav-sm">
-                      <li className="nav-item">
-                        <a className="nav-link" href="#">
-                          Terms
-                        </a>
-                      </li>
-                      <li className="nav-item">
-                        <a className="nav-link" href="#">
-                          Privacy
-                        </a>
-                      </li>
-                      <li className="nav-item">
-                        <a className="nav-link" href="#">
-                          Help
-                        </a>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <FooterComponent />
             {/* footer @e */}
           </div>
           {/* wrap @e */}

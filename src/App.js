@@ -5,6 +5,8 @@ import { AuthProvider } from "./contexts/AuthContext"; // ✅ Le provider
 import LoginPage from "./pages/LoginPage";
 import Dashboard from "./pages/Dashboard";
 import DetailVoyage from "./pages/DetailVoyage";
+import ProfilUser from "./pages/ProfilUser";
+import SignupPage from "./pages/SignupPage";
 
 function App() {
   return (
@@ -13,9 +15,11 @@ function App() {
       {/* ✅ Ce wrapper est super important */}
       <Router>
         <Routes>
-          <Route path="/" element={<LoginPage />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          {/* <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} /> */}
+          <Route path="/" element={<Dashboard />} />
           <Route path="/detail-voyage/:id" element={<DetailVoyage />} />
+          {/* <Route path="/profil-user" element={<ProfilUser />} /> */}
         </Routes>
       </Router>
     </AuthProvider>

@@ -1,14 +1,46 @@
 import React, { useEffect, useState } from "react";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, doc, getDoc } from "firebase/firestore";
 import NavBarComponent from "../components/NavBarComponent";
 import { useNavigate } from "react-router-dom";
 import FooterComponent from "../components/FooterComponent";
 
-export default function DetailVoyage() {
+export default function DetailVoyage({ id }) {
+  const [voyage, setVoyage] = useState(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const handleBackNavigation = () => {
     navigate("/");
   };
+
+  useEffect(() => {
+    const fetchVoyage = async () => {
+      try {
+        const docRef = doc(collection("voyages"), id);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setVoyage(docSnap.data());
+        } else {
+          console.log("No such document!");
+        }
+        setLoading(false);
+      } catch (error) {
+        console.log("Error fetching voyage: ", error);
+        setLoading(false);
+      }
+    };
+    fetchVoyage();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center vh-100">
+        <div className="spinner-grow text-primary" role="status">
+          <span className="sr-only">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="nk-body bg-lighter npc-default has-sidebar ">
       <div className="nk-app-root">
@@ -27,9 +59,9 @@ export default function DetailVoyage() {
                       <div className="nk-block-between g-3">
                         <div className="nk-block-head-content">
                           <h3 className="nk-block-title page-title">
-                            Users /{" "}
+                            Voyage /{" "}
                             <strong className="text-primary small">
-                              Abu Bin Ishtiyak
+                              {voyage?.titre}
                             </strong>
                           </h3>
                           <div className="nk-block-des text-soft">
@@ -130,37 +162,37 @@ export default function DetailVoyage() {
                                   <div className="profile-ud-item">
                                     <div className="profile-ud wider">
                                       <span className="profile-ud-label">
-                                        Title
+                                        Titre
                                       </span>
                                       <span className="profile-ud-value">
-                                        Mr.
+                                        {voyage?.titre}
                                       </span>
                                     </div>
                                   </div>
                                   <div className="profile-ud-item">
                                     <div className="profile-ud wider">
                                       <span className="profile-ud-label">
-                                        Full Name
+                                        Description
                                       </span>
                                       <span className="profile-ud-value">
-                                        Abu Bin Ishtiyak
+                                        {voyage?.description}
                                       </span>
                                     </div>
                                   </div>
                                   <div className="profile-ud-item">
                                     <div className="profile-ud wider">
                                       <span className="profile-ud-label">
-                                        Date of Birth
+                                        Date de debut
                                       </span>
                                       <span className="profile-ud-value">
-                                        10 Aug, 1980
+                                        {voyage?.dateDebut}
                                       </span>
                                     </div>
                                   </div>
                                   <div className="profile-ud-item">
                                     <div className="profile-ud wider">
                                       <span className="profile-ud-label">
-                                        Surname
+                                        Date de fin
                                       </span>
                                       <span className="profile-ud-value">
                                         IO
@@ -479,7 +511,7 @@ export default function DetailVoyage() {
                                   </div>
                                   <div className="col-6">
                                     <span className="sub-text">
-                                      Register At:
+                                      {voyage?.dateFin}
                                     </span>
                                     <span>Nov 24, 2019</span>
                                   </div>
@@ -539,13 +571,9 @@ export default function DetailVoyage() {
                             </div>
                             {/* .card-inner */}
                           </div>
-                          {/* .card-aside */}
                         </div>
-                        {/* .card-aside-wrap */}
                       </div>
-                      {/* .card */}
                     </div>
-                    {/* .nk-block */}
                   </div>
                 </div>
               </div>

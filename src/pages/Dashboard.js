@@ -1,6 +1,6 @@
 // src/pages/Dashboard.js
 import React, { useEffect, useState } from "react";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, doc } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -12,6 +12,12 @@ export default function Dashboard() {
   const [voyages, setVoyages] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const [lieux, setLieux] = useState([]);
+  const [filters, setFilters] = useState({
+    depart: "",
+    arrivee: "",
+    date: "",
+  });
 
   useEffect(() => {
     const fetchVoyages = async () => {
@@ -68,6 +74,70 @@ export default function Dashboard() {
     fetchVoyages();
   }, [user]);
 
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    try {
+      // Convert date to Firestore timestamp if needed
+      const dateFilter = filters.date ? new Date(filters.date) : null;
+
+      // Build the query
+      let q = query(collection(db, "voyages"));
+
+      // Add filters
+      const conditions = [];
+      if (filters.depart) {
+        conditions.push(
+          where("lieu_depart", "==", doc(db, "lieux", filters.depart))
+        );
+      }
+      if (filters.arrivee) {
+        conditions.push(
+          where("lieu_arrivee", "==", doc(db, "lieux", filters.arrivee))
+        );
+      }
+      // if (dateFilter) {
+      //   conditions.push(where("date_voyage", ">=", dateFilter));
+      // }
+
+      // Apply all conditions
+      if (conditions.length > 0) {
+        q = query(q, ...conditions);
+      }
+
+      const querySnapshot = await getDocs(q);
+      const result = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setVoyages(result);
+      // Close the modal
+      const modal = document.getElementById("modalForm");
+      const modalClose = new bootstrap.Modal(modal);
+      modalClose.hide();
+    } catch (error) {
+      console.error("Error searching voyages: ", error);
+    }
+  };
+
+  useEffect(() => {
+    const fetchLieux = async () => {
+      try {
+        const q = query(collection(db, "lieux"));
+        const querySnapshot = await getDocs(q);
+        const lieuxList = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setLieux(lieuxList);
+      } catch (error) {
+        console.error("Error fetching locations: ", error);
+      }
+    };
+
+    fetchLieux();
+  }, []);
+
   if (loading)
     return (
       <div className="d-flex justify-content-center align-items-center vh-100">
@@ -115,12 +185,14 @@ export default function Dashboard() {
                             <a
                               href="#"
                               className="btn btn-icon btn-lg btn-outline-primary m-1dropdown-toggle"
-                              data-toggle="dropdown"
+                              type="button"
+                              data-toggle="modal"
+                              data-target="#modalForm"
                             >
                               <em className="icon ni ni-search"></em>
                             </a>
 
-                            <div className="filter-wg dropdown-menu dropdown-menu-xl dropdown-menu-right">
+                            {/* <div className="filter-wg dropdown-menu dropdown-menu-xl dropdown-menu-right">
                               <div className="dropdown-head">
                                 <span className="sub-title dropdown-title">
                                   Advance Filter
@@ -235,7 +307,127 @@ export default function Dashboard() {
                                   Save Filter
                                 </a>
                               </div>
+                            </div> */}
+                            <div className="modal fade" id="modalForm">
+                              <div className="modal-dialog" role="document">
+                                <div className="modal-content">
+                                  <div className="modal-header">
+                                    <h5 className="modal-title">
+                                      Recherche de voyage
+                                    </h5>
+                                    <a
+                                      href="#"
+                                      className="close"
+                                      data-dismiss="modal"
+                                      aria-label="Close"
+                                    >
+                                      <em className="icon ni ni-cross" />
+                                    </a>
+                                  </div>
+                                  <div className="modal-body">
+                                    <form
+                                      action="#"
+                                      className="form-validate is-alter"
+                                      onSubmit={handleSearch}
+                                    >
+                                      <div className="form-group">
+                                        <label
+                                          className="form-label"
+                                          htmlFor="date"
+                                        >
+                                          Date du voyage
+                                        </label>
+                                        <div className="form-control-wrap">
+                                          <input
+                                            type="date"
+                                            className="form-control"
+                                            id="date"
+                                            required=""
+                                          />
+                                        </div>
+                                      </div>
+                                      <div className="form-group">
+                                        <label
+                                          className="form-label"
+                                          htmlFor="depart"
+                                        >
+                                          Lieu de départ
+                                        </label>
+                                        <div className="form-control-wrap">
+                                          <select
+                                            className="form-control form-select"
+                                            id="depart"
+                                            value={filters.depart}
+                                            onChange={(e) =>
+                                              setFilters({
+                                                ...filters,
+                                                depart: e.target.value,
+                                              })
+                                            }
+                                            required
+                                          >
+                                            <option value="">
+                                              Sélectionner un lieu de départ
+                                            </option>
+                                            {lieux.map((lieu) => (
+                                              <option
+                                                key={`depart-${lieu.id}`}
+                                                value={lieu.id}
+                                              >
+                                                {lieu.libelle_lieux}
+                                              </option>
+                                            ))}
+                                          </select>
+                                        </div>
+                                      </div>
+                                      <div className="form-group">
+                                        <label
+                                          className="form-label"
+                                          htmlFor="destination"
+                                        >
+                                          Lieu d'arrivée
+                                        </label>
+                                        <div className="form-control-wrap">
+                                          <select
+                                            className="form-control form-select"
+                                            id="destination"
+                                            value={filters.arrivee}
+                                            onChange={(e) =>
+                                              setFilters({
+                                                ...filters,
+                                                arrivee: e.target.value,
+                                              })
+                                            }
+                                            required
+                                          >
+                                            <option value="">
+                                              Sélectionner un lieu d'arrivée
+                                            </option>
+                                            {lieux.map((lieu) => (
+                                              <option
+                                                key={`arrivee-${lieu.id}`}
+                                                value={lieu.id}
+                                              >
+                                                {lieu.libelle_lieux}
+                                              </option>
+                                            ))}
+                                          </select>
+                                        </div>
+                                      </div>
+                                      <div className="form-group">
+                                        <button
+                                          type="submit"
+                                          className="btn btn-lg btn-primary"
+                                        >
+                                          Rechercher
+                                        </button>
+                                      </div>
+                                    </form>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
+
                             {/* .filter-wg */}
                           </div>
                           {/* .dropdown */}

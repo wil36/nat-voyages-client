@@ -29,14 +29,12 @@ export default function NavBarComponent() {
             <a href="html/index.html" className="logo-link">
               <img
                 className="logo-light logo-img"
-                src="/src/assets/images/logo.png"
-                srcSet="/src/assets/images/logo.png"
+                src={`${process.env.PUBLIC_URL}/assets/images/logo.png`}
                 alt="logo"
               />
               <img
                 className="logo-dark logo-img"
-                src="/src/assets/images/logo-dark.png"
-                srcSet="/src/assets/images/logo-dark2x.png 2x"
+                src={`${process.env.PUBLIC_URL}/assets/images/logo-dark.png`}
                 alt="logo-dark"
               />
             </a>

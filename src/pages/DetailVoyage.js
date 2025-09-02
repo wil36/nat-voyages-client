@@ -108,40 +108,7 @@ export default function DetailVoyage({ id }) {
                               <li className="nav-item">
                                 <a className="nav-link active" href="#">
                                   <em className="icon ni ni-user-circle" />
-                                  <span>Personal</span>
-                                </a>
-                              </li>
-                              <li className="nav-item">
-                                <a className="nav-link" href="#">
-                                  <em className="icon ni ni-repeat" />
-                                  <span>Transactions</span>
-                                </a>
-                              </li>
-                              <li className="nav-item">
-                                <a className="nav-link" href="#">
-                                  <em className="icon ni ni-file-text" />
-                                  <span>Documents</span>
-                                </a>
-                              </li>
-                              <li className="nav-item">
-                                <a className="nav-link" href="#">
-                                  <em className="icon ni ni-bell" />
-                                  <span>Notifications</span>
-                                </a>
-                              </li>
-                              <li className="nav-item">
-                                <a className="nav-link" href="#">
-                                  <em className="icon ni ni-activity" />
-                                  <span>Activities</span>
-                                </a>
-                              </li>
-                              <li className="nav-item nav-item-trigger d-xxl-none">
-                                <a
-                                  href="#"
-                                  className="toggle btn btn-icon btn-trigger"
-                                  data-target="userAside"
-                                >
-                                  <em className="icon ni ni-user-list-fill" />
+                                  <span>Information sur le voyage</span>
                                 </a>
                               </li>
                             </ul>
@@ -150,7 +117,7 @@ export default function DetailVoyage({ id }) {
                               <div className="nk-block">
                                 <div className="nk-block-head">
                                   <h5 className="title">
-                                    Personal Information
+                                    Information sur le voyage
                                   </h5>
                                   <p>
                                     Basic info, like your name and address, that

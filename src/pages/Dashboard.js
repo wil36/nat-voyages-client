@@ -18,6 +18,42 @@ export default function Dashboard() {
     arrivee: "",
     date: "",
   });
+  const [hasSearched, setHasSearched] = useState(false);
+  const [originalVoyages, setOriginalVoyages] = useState([]);
+
+  // Update your fetchVoyages function to save the original voyages
+  const fetchVoyages = async () => {
+    if (!user) return;
+
+    try {
+      const q = query(collection(db, "voyages"));
+      const querySnapshot = await getDocs(q);
+      const result = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setVoyages(result);
+      setOriginalVoyages(result); // Save the original list
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching voyages: ", error);
+      setLoading(false);
+    }
+  };
+
+  // Add this reset function
+  const resetVoyages = () => {
+    setVoyages(originalVoyages);
+    // fetchVoyages();
+    setHasSearched(false);
+    // Reset the form
+    setFilters({
+      depart: "",
+      arrivee: "",
+      date: "",
+    });
+  };
 
   useEffect(() => {
     const fetchVoyages = async () => {
@@ -76,6 +112,8 @@ export default function Dashboard() {
 
   const handleSearch = async (e) => {
     e.preventDefault();
+    console.log(doc(db, "lieux", filters.depart));
+    console.log(doc(db, "lieux", filters.arrivee));
     try {
       // Convert date to Firestore timestamp if needed
       const dateFilter = filters.date ? new Date(filters.date) : null;
@@ -84,25 +122,25 @@ export default function Dashboard() {
       let q = query(collection(db, "voyages"));
 
       // Add filters
-      const conditions = [];
-      if (filters.depart) {
-        conditions.push(
-          where("lieu_depart", "==", doc(db, "lieux", filters.depart))
-        );
-      }
-      if (filters.arrivee) {
-        conditions.push(
-          where("lieu_arrivee", "==", doc(db, "lieux", filters.arrivee))
-        );
-      }
-      // if (dateFilter) {
-      //   conditions.push(where("date_voyage", ">=", dateFilter));
+      // const conditions = [];
+      // if (filters.depart) {
+      //   conditions.push(
+      //     where("lieu_depart", "==", doc(db, "lieux", filters.depart))
+      //   );
       // }
+      // if (filters.arrivee) {
+      //   conditions.push(
+      //     where("lieu_arrivee", "==", doc(db, "lieux", filters.arrivee))
+      //   );
+      // }
+      // // if (dateFilter) {
+      // //   conditions.push(where("date_voyage", ">=", dateFilter));
+      // // }
 
-      // Apply all conditions
-      if (conditions.length > 0) {
-        q = query(q, ...conditions);
-      }
+      // // Apply all conditions
+      // if (conditions.length > 0) {
+      //   q = query(q, ...conditions);
+      // }
 
       const querySnapshot = await getDocs(q);
       const result = querySnapshot.docs.map((doc) => ({
@@ -111,6 +149,7 @@ export default function Dashboard() {
       }));
 
       setVoyages(result);
+      setHasSearched(true);
       // Close the modal
       const modal = document.getElementById("modalForm");
       const modalClose = new bootstrap.Modal(modal);
@@ -191,6 +230,15 @@ export default function Dashboard() {
                             >
                               <em className="icon ni ni-search"></em>
                             </a>
+                            {hasSearched && (
+                              <button
+                                type="button"
+                                className="ml-1 btn btn-icon btn-lg btn-outline-primary"
+                                onClick={resetVoyages}
+                              >
+                                <em className="icon ni ni-reload"></em>{" "}
+                              </button>
+                            )}
 
                             {/* <div className="filter-wg dropdown-menu dropdown-menu-xl dropdown-menu-right">
                               <div className="dropdown-head">
@@ -358,6 +406,7 @@ export default function Dashboard() {
                                             className="form-control form-select"
                                             id="depart"
                                             value={filters.depart}
+                                            data-search=""
                                             onChange={(e) =>
                                               setFilters({
                                                 ...filters,

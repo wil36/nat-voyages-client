@@ -30,6 +30,7 @@ export default function Dashboard() {
       const querySnapshot = await getDocs(q);
       const result = querySnapshot.docs.map((doc) => ({
         id: doc.id,
+        referenceDoc: doc.ref.path,
         ...doc.data(),
       }));
 
@@ -77,6 +78,7 @@ export default function Dashboard() {
 
           result.push({
             id: doc.id,
+            referenceDoc: doc.ref.path,
             libelle_bateau: data.libelle_bateau || "Inconnu",
             bateau_reference: data.bateau_reference || "",
             date_voyage: data.date_voyage?.toDate().toLocaleDateString() || "",
@@ -99,8 +101,8 @@ export default function Dashboard() {
             trajet: data.trajet || [],
           });
         });
-
         setVoyages(result);
+        setOriginalVoyages(result); // Save the original list
         setLoading(false);
       } catch (err) {
         console.error("Erreur chargement voyages :", err);
@@ -110,49 +112,109 @@ export default function Dashboard() {
     fetchVoyages();
   }, [user]);
 
+  // const handleSearch = async (e) => {
+  //   e.preventDefault();
+  //   console.log(doc(db, "lieux", filters.depart).path);
+  //   console.log(doc(db, "lieux", filters.arrivee).path);
+  //   try {
+  //     // Convert date to Firestore timestamp if needed
+  //     const dateFilter = filters.date
+  //       ? new Date(filters.date).toISOString()
+  //       : null;
+
+  //     // Build the query
+  //     let q = query(collection(db, "voyages"));
+
+  //     // Add filters
+  //     const conditions = [];
+  //     // if (filters.depart) {
+  //     //   conditions.push(
+  //     //     where("lieu_depart", "==", doc(db, "lieux", filters.depart).path)
+  //     //   );
+  //     // }
+  //     // if (filters.arrivee) {
+  //     //   conditions.push(
+  //     //     where("lieu_arrivee", "==", doc(db, "lieux", filters.arrivee).path)
+  //     //   );
+  //     // }
+  //     // if (dateFilter) {
+  //     //   conditions.push(where("date_voyage", ">=", dateFilter));
+  //     // }
+
+  //     // Apply all conditions
+  //     if (conditions.length > 0) {
+  //       q = query(q, ...conditions);
+  //     }
+
+  //     const querySnapshot = await getDocs(q);
+  //     console.log(querySnapshot.docs.length);
+  //     const result = querySnapshot.docs.map((doc) => ({
+  //       id: doc.id,
+  //       referenceDoc: doc.ref.path,
+  //       ...doc.data(),
+  //       // date_voyage: doc.data().date_voyage.toDate().toISOString(),
+  //     }));
+
+  //     console.log(result);
+
+  //     setVoyages([]);
+  //     setVoyages(result);
+  //     setHasSearched(true);
+  //     // Close the modal
+  //     const modal = document.getElementById("modalForm");
+  //     const modalClose = new bootstrap.Modal(modal);
+  //     modalClose.hide();
+  //   } catch (error) {
+  //     console.error("Error searching voyages: ", error);
+  //   }
+  // };
+
   const handleSearch = async (e) => {
     e.preventDefault();
-    console.log(doc(db, "lieux", filters.depart));
-    console.log(doc(db, "lieux", filters.arrivee));
     try {
-      // Convert date to Firestore timestamp if needed
-      const dateFilter = filters.date ? new Date(filters.date) : null;
-
-      // Build the query
       let q = query(collection(db, "voyages"));
+      const conditions = [];
 
-      // Add filters
-      // const conditions = [];
       // if (filters.depart) {
-      //   conditions.push(
-      //     where("lieu_depart", "==", doc(db, "lieux", filters.depart))
-      //   );
+      //   conditions.push(where("lieu_depart", "==", filters.depart));
       // }
       // if (filters.arrivee) {
-      //   conditions.push(
-      //     where("lieu_arrivee", "==", doc(db, "lieux", filters.arrivee))
-      //   );
+      //   conditions.push(where("lieu_arrivee", "==", filters.arrivee));
       // }
-      // // if (dateFilter) {
-      // //   conditions.push(where("date_voyage", ">=", dateFilter));
-      // // }
+      if (filters.date) {
+        const startDate = new Date(filters.date);
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date(filters.date);
+        endDate.setHours(23, 59, 59, 999);
+        conditions.push(where("date_voyage", ">=", startDate));
+        conditions.push(where("date_voyage", "<=", endDate));
+      }
 
-      // // Apply all conditions
-      // if (conditions.length > 0) {
-      //   q = query(q, ...conditions);
-      // }
+      if (conditions.length > 0) {
+        q = query(q, ...conditions);
+      }
 
       const querySnapshot = await getDocs(q);
-      const result = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      console.log(querySnapshot.docs.length);
+      const result = querySnapshot.docs.map((doc) => {
+        const data = doc.data();
+        // Convert Firestore Timestamp to formatted date string
+        if (data.date_voyage) {
+          data.date_voyage = data.date_voyage.toDate().toLocaleString("fr-FR");
+        }
+        return {
+          id: doc.id,
+          referenceDoc: doc.ref.path,
+          ...data,
+        };
+      });
 
       setVoyages(result);
       setHasSearched(true);
+
       // Close the modal
-      const modal = document.getElementById("modalForm");
-      const modalClose = new bootstrap.Modal(modal);
+      const modalElement = document.getElementById("modalForm");
+      const modalClose = new bootstrap.Modal(modalElement, {});
       modalClose.hide();
     } catch (error) {
       console.error("Error searching voyages: ", error);
@@ -492,7 +554,10 @@ export default function Dashboard() {
                           </div>
                         ) : (
                           voyages.map((v) => (
-                            <div className="col-md-6 col-xxl-3" key={v.id}>
+                            <div
+                              className="col-md-6 col-xxl-3"
+                              key={v.referenceDoc}
+                            >
                               <div className="card card-bordered pricing">
                                 <div className="pricing-head">
                                   <div className="pricing-title">

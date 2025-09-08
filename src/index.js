@@ -35,7 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Load the CSS and JS files
   loadCSS("/assets/css/dashlite.css");
-  loadCSS("/assets/css/theme.css");
+  // loadCSS("/assets/css/theme.css");
   loadJS("/assets/js/bundle.js");
 });
 

@@ -1,6 +1,13 @@
 // src/pages/Dashboard.js
 import React, { useEffect, useState } from "react";
-import { collection, query, where, getDocs, doc } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  orderBy,
+} from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -20,6 +27,7 @@ export default function Dashboard() {
   });
   const [hasSearched, setHasSearched] = useState(false);
   const [originalVoyages, setOriginalVoyages] = useState([]);
+  const [originalVoyagesForSearch, setOriginalVoyagesForSearch] = useState([]);
 
   // Update your fetchVoyages function to save the original voyages
   const fetchVoyages = async () => {
@@ -64,10 +72,15 @@ export default function Dashboard() {
         // ✅ On utilise la collection 'users' maintenant
         // const clientRef = doc(db, "users", user.uid);
 
+        const today = new Date();
+        // today.setHours(0, 0, 0, 0);
+
+        console.log(today);
+
         const q = query(
-          collection(db, "voyages")
-          // .where("date_voyage", "<=", new Date())
-          // .orderBy("date_voyage", "asc")
+          collection(db, "voyages"),
+          where("date_voyage", ">=", today),
+          orderBy("date_voyage", "desc")
         );
 
         const querySnapshot = await getDocs(q);
@@ -112,101 +125,51 @@ export default function Dashboard() {
     fetchVoyages();
   }, [user]);
 
-  // const handleSearch = async (e) => {
-  //   e.preventDefault();
-  //   console.log(doc(db, "lieux", filters.depart).path);
-  //   console.log(doc(db, "lieux", filters.arrivee).path);
-  //   try {
-  //     // Convert date to Firestore timestamp if needed
-  //     const dateFilter = filters.date
-  //       ? new Date(filters.date).toISOString()
-  //       : null;
-
-  //     // Build the query
-  //     let q = query(collection(db, "voyages"));
-
-  //     // Add filters
-  //     const conditions = [];
-  //     // if (filters.depart) {
-  //     //   conditions.push(
-  //     //     where("lieu_depart", "==", doc(db, "lieux", filters.depart).path)
-  //     //   );
-  //     // }
-  //     // if (filters.arrivee) {
-  //     //   conditions.push(
-  //     //     where("lieu_arrivee", "==", doc(db, "lieux", filters.arrivee).path)
-  //     //   );
-  //     // }
-  //     // if (dateFilter) {
-  //     //   conditions.push(where("date_voyage", ">=", dateFilter));
-  //     // }
-
-  //     // Apply all conditions
-  //     if (conditions.length > 0) {
-  //       q = query(q, ...conditions);
-  //     }
-
-  //     const querySnapshot = await getDocs(q);
-  //     console.log(querySnapshot.docs.length);
-  //     const result = querySnapshot.docs.map((doc) => ({
-  //       id: doc.id,
-  //       referenceDoc: doc.ref.path,
-  //       ...doc.data(),
-  //       // date_voyage: doc.data().date_voyage.toDate().toISOString(),
-  //     }));
-
-  //     console.log(result);
-
-  //     setVoyages([]);
-  //     setVoyages(result);
-  //     setHasSearched(true);
-  //     // Close the modal
-  //     const modal = document.getElementById("modalForm");
-  //     const modalClose = new bootstrap.Modal(modal);
-  //     modalClose.hide();
-  //   } catch (error) {
-  //     console.error("Error searching voyages: ", error);
-  //   }
-  // };
-
-  const handleSearch = async (e) => {
+  const handleSearch = (e) => {
     e.preventDefault();
     try {
-      let q = query(collection(db, "voyages"));
-      const conditions = [];
+      setOriginalVoyagesForSearch(originalVoyages);
+      // Filter client-side using originalVoyages
+      let result = originalVoyagesForSearch.filter((voyage) => {
+        let matchesFilter = true;
 
-      // if (filters.depart) {
-      //   conditions.push(where("lieu_depart", "==", filters.depart));
-      // }
-      // if (filters.arrivee) {
-      //   conditions.push(where("lieu_arrivee", "==", filters.arrivee));
-      // }
-      if (filters.date) {
-        const startDate = new Date(filters.date);
-        startDate.setHours(0, 0, 0, 0);
-        const endDate = new Date(filters.date);
-        endDate.setHours(23, 59, 59, 999);
-        conditions.push(where("date_voyage", ">=", startDate));
-        conditions.push(where("date_voyage", "<=", endDate));
-      }
+        // Date filter
+        if (filters.date) {
+          const searchDate = new Date(filters.date);
+          // Parse the already formatted date string
+          const voyageDateParts = voyage.date_voyage.split("/");
+          const voyageDate = new Date(
+            voyageDateParts[2],
+            voyageDateParts[1] - 1,
+            voyageDateParts[0]
+          );
 
-      if (conditions.length > 0) {
-        q = query(q, ...conditions);
-      }
-
-      const querySnapshot = await getDocs(q);
-      console.log(querySnapshot.docs.length);
-      const result = querySnapshot.docs.map((doc) => {
-        const data = doc.data();
-        // Convert Firestore Timestamp to formatted date string
-        if (data.date_voyage) {
-          data.date_voyage = data.date_voyage.toDate().toLocaleString("fr-FR");
+          if (voyageDate.toDateString() !== searchDate.toDateString()) {
+            matchesFilter = false;
+          }
         }
-        return {
-          id: doc.id,
-          referenceDoc: doc.ref.path,
-          ...data,
-        };
+
+        // Departure filter - check if departure location exists in trajet
+        if (filters.depart && matchesFilter) {
+          const hasDepart = voyage.trajet?.some(
+            (etape) => etape.LieuDeDepart === filters.depart
+          );
+          if (!hasDepart) {
+            matchesFilter = false;
+          }
+        }
+
+        // Arrival filter - check if arrival location exists in trajet
+        if (filters.arrivee && matchesFilter) {
+          const hasArrivee = voyage.trajet?.some(
+            (etape) => etape.LieuDArriver === filters.arrivee
+          );
+          if (!hasArrivee) {
+            matchesFilter = false;
+          }
+        }
+
+        return matchesFilter;
       });
 
       setVoyages(result);
@@ -214,8 +177,12 @@ export default function Dashboard() {
 
       // Close the modal
       const modalElement = document.getElementById("modalForm");
-      const modalClose = new bootstrap.Modal(modalElement, {});
-      modalClose.hide();
+      if (modalElement && window.bootstrap) {
+        const modalInstance =
+          window.bootstrap.Modal.getInstance(modalElement) ||
+          new window.bootstrap.Modal(modalElement);
+        modalInstance.hide();
+      }
     } catch (error) {
       console.error("Error searching voyages: ", error);
     }
@@ -248,10 +215,41 @@ export default function Dashboard() {
       </div>
     );
 
-  const handleRedirect = async (id) => {
+  const handleRedirect = (voyage) => {
     try {
-      navigate(`/detail-voyage/${id}`);
-    } catch (err) {}
+      // Clean the voyage object to remove non-serializable properties
+      const cleanVoyage = {
+        id: voyage.id,
+        libelle_bateau: voyage.libelle_bateau,
+        agence_name: voyage.agence_name,
+        date_voyage: voyage.date_voyage,
+        statut: voyage.statut,
+        montant: voyage.montant,
+        chauffeur: voyage.chauffeur,
+        hotesse1: voyage.hotesse1,
+        hotesse2: voyage.hotesse2,
+        mecanicien: voyage.mecanicien,
+        place_disponible_eco: voyage.place_disponible_eco,
+        place_disponible_vip: voyage.place_disponible_vip,
+        place_prise_eco: voyage.place_prise_eco,
+        place_prise_vip: voyage.place_prise_vip,
+        trajet: voyage.trajet
+          ? voyage.trajet.map((etape) => ({
+              LieuDeDepart: etape.LieuDeDepart,
+              LieuDeDepartLibelle: etape.LieuDeDepartLibelle,
+              LieuDArriver: etape.LieuDArriver,
+              LieuDArriverLibelle: etape.LieuDArriverLibelle,
+              heure_depart: etape.heure_depart,
+            }))
+          : [],
+      };
+
+      navigate(`/detail-voyage/${voyage.id}`, {
+        state: { voyage: cleanVoyage },
+      });
+    } catch (err) {
+      console.error("Navigation error:", err);
+    }
   };
 
   return (
@@ -452,6 +450,13 @@ export default function Dashboard() {
                                             type="date"
                                             className="form-control"
                                             id="date"
+                                            value={filters.date}
+                                            onChange={(e) =>
+                                              setFilters({
+                                                ...filters,
+                                                date: e.target.value,
+                                              })
+                                            }
                                             required=""
                                           />
                                         </div>
@@ -568,26 +573,33 @@ export default function Dashboard() {
                                       {v.date_voyage} - {v.libelle_bateau}
                                     </p>
                                   </div>
-                                  <div className="card-text">
-                                    <div className="row">
-                                      <div className="col-4">
-                                        <span className="h4 fw-500"></span>
+                                  <div className="card-text center">
+                                    <div className="trajet-list">
+                                      {v.trajet && v.trajet.length > 0 ? (
+                                        v.trajet.map((etape, index) => (
+                                          <div
+                                            key={index}
+                                            className="trajet-etape d-flex align-items-center mb-1"
+                                          >
+                                            <span className="sub-text">
+                                              {etape.LieuDeDepartLibelle}
+                                            </span>
+                                            <em className="icon ni ni-arrow-right mx-2"></em>
+                                            <span className="sub-text">
+                                              {etape.LieuDArriverLibelle}
+                                            </span>
+                                            {etape.heure_depart && (
+                                              <small className="text-muted ms-2">
+                                                ({etape.heure_depart})
+                                              </small>
+                                            )}
+                                          </div>
+                                        ))
+                                      ) : (
                                         <span className="sub-text">
-                                          {v.trajet[0].LieuDeDepartLibelle}
+                                          Trajet non défini
                                         </span>
-                                      </div>
-                                      <div className="col-4">
-                                        <em className="icon ni ni-arrow-right"></em>
-                                      </div>
-                                      <div className="col-4">
-                                        <span className="h4 fw-500"></span>
-                                        <span className="sub-text">
-                                          {
-                                            v.trajet[v.trajet.length - 1]
-                                              .LieuDArriverLibelle
-                                          }
-                                        </span>
-                                      </div>
+                                      )}
                                     </div>
                                   </div>
                                 </div>
@@ -627,7 +639,7 @@ export default function Dashboard() {
                                   <div className="pricing-action">
                                     <button
                                       className="btn btn-outline-light"
-                                      onClick={() => handleRedirect(v.id)}
+                                      onClick={() => handleRedirect(v)}
                                     >
                                       Voir le voyage
                                     </button>

@@ -1,35 +1,45 @@
 import React, { useEffect, useState } from "react";
 import { collection, doc, getDoc } from "firebase/firestore";
+import { db } from "../firebase";
 import NavBarComponent from "../components/NavBarComponent";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import FooterComponent from "../components/FooterComponent";
 
-export default function DetailVoyage({ id }) {
+export default function DetailVoyage() {
   const [voyage, setVoyage] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
+  const { id } = useParams();
   const handleBackNavigation = () => {
     navigate("/");
   };
 
   useEffect(() => {
-    const fetchVoyage = async () => {
-      try {
-        const docRef = doc(collection("voyages"), id);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setVoyage(docSnap.data());
-        } else {
-          console.log("No such document!");
+    // Check if voyage object was passed via navigation state
+    if (location.state && location.state.voyage) {
+      setVoyage(location.state.voyage);
+      setLoading(false);
+    } else {
+      // Fallback: fetch from Firestore if no state passed
+      const fetchVoyage = async () => {
+        try {
+          const docRef = doc(db, "voyages", id);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            setVoyage(docSnap.data());
+          } else {
+            console.log("No such document!");
+          }
+          setLoading(false);
+        } catch (error) {
+          console.log("Error fetching voyage: ", error);
+          setLoading(false);
         }
-        setLoading(false);
-      } catch (error) {
-        console.log("Error fetching voyage: ", error);
-        setLoading(false);
-      }
-    };
-    fetchVoyage();
-  }, [id]);
+      };
+      fetchVoyage();
+    }
+  }, [id, location.state]);
 
   if (loading) {
     return (
@@ -61,19 +71,21 @@ export default function DetailVoyage({ id }) {
                           <h3 className="nk-block-title page-title">
                             Voyage /{" "}
                             <strong className="text-primary small">
-                              {voyage?.titre}
+                              {voyage?.libelle_bateau || voyage?.titre}
                             </strong>
                           </h3>
                           <div className="nk-block-des text-soft">
                             <ul className="list-inline">
                               <li>
-                                User ID:{" "}
-                                <span className="text-base">UD003054</span>
+                                Agence:{" "}
+                                <span className="text-base">
+                                  {voyage?.agence_name}
+                                </span>
                               </li>
                               <li>
-                                Last Login:{" "}
+                                Date:{" "}
                                 <span className="text-base">
-                                  15 Feb, 2019 01:02 PM
+                                  {voyage?.date_voyage}
                                 </span>
                               </li>
                             </ul>
@@ -119,70 +131,66 @@ export default function DetailVoyage({ id }) {
                                   <h5 className="title">
                                     Information sur le voyage
                                   </h5>
-                                  <p>
-                                    Basic info, like your name and address, that
-                                    you use on Nio Platform.
-                                  </p>
                                 </div>
                                 {/* .nk-block-head */}
                                 <div className="profile-ud-list">
                                   <div className="profile-ud-item">
                                     <div className="profile-ud wider">
                                       <span className="profile-ud-label">
-                                        Titre
+                                        Bateau
                                       </span>
                                       <span className="profile-ud-value">
-                                        {voyage?.titre}
+                                        {voyage?.libelle_bateau}
                                       </span>
                                     </div>
                                   </div>
                                   <div className="profile-ud-item">
                                     <div className="profile-ud wider">
                                       <span className="profile-ud-label">
-                                        Description
+                                        Agence
                                       </span>
                                       <span className="profile-ud-value">
-                                        {voyage?.description}
+                                        {voyage?.agence_name}
                                       </span>
                                     </div>
                                   </div>
                                   <div className="profile-ud-item">
                                     <div className="profile-ud wider">
                                       <span className="profile-ud-label">
-                                        Date de debut
+                                        Date du voyage
                                       </span>
                                       <span className="profile-ud-value">
-                                        {voyage?.dateDebut}
+                                        {voyage?.date_voyage}
                                       </span>
                                     </div>
                                   </div>
                                   <div className="profile-ud-item">
                                     <div className="profile-ud wider">
                                       <span className="profile-ud-label">
-                                        Date de fin
+                                        Statut
                                       </span>
                                       <span className="profile-ud-value">
-                                        IO
+                                        {voyage?.statut}
                                       </span>
                                     </div>
                                   </div>
-                                  <div className="profile-ud-item">
+                                  {/* <div className="profile-ud-item">
                                     <div className="profile-ud wider">
                                       <span className="profile-ud-label">
-                                        Mobile Number
+                                        Montant TTC
                                       </span>
                                       <span className="profile-ud-value">
-                                        01713040400
+                                        {voyage?.montant} FCFA
                                       </span>
                                     </div>
-                                  </div>
+                                  </div> */}
                                   <div className="profile-ud-item">
                                     <div className="profile-ud wider">
                                       <span className="profile-ud-label">
-                                        Email Address
+                                        Chauffeur
                                       </span>
                                       <span className="profile-ud-value">
-                                        info@softnio.com
+                                        {voyage?.chauffeur}
                                       </span>
                                     </div>
                                   </div>
@@ -193,7 +201,7 @@ export default function DetailVoyage({ id }) {
                               <div className="nk-block">
                                 <div className="nk-block-head nk-block-head-line">
                                   <h6 className="title overline-title text-base">
-                                    Additional Information
+                                    Équipage
                                   </h6>
                                 </div>
                                 {/* .nk-block-head */}
@@ -201,40 +209,30 @@ export default function DetailVoyage({ id }) {
                                   <div className="profile-ud-item">
                                     <div className="profile-ud wider">
                                       <span className="profile-ud-label">
-                                        Joining Date
+                                        Hôtesse 1
                                       </span>
                                       <span className="profile-ud-value">
-                                        08-16-2018 09:04PM
+                                        {voyage?.hotesse1 || "Non assigné"}
                                       </span>
                                     </div>
                                   </div>
                                   <div className="profile-ud-item">
                                     <div className="profile-ud wider">
                                       <span className="profile-ud-label">
-                                        Reg Method
+                                        Hôtesse 2
                                       </span>
                                       <span className="profile-ud-value">
-                                        Email
+                                        {voyage?.hotesse2 || "Non assigné"}
                                       </span>
                                     </div>
                                   </div>
                                   <div className="profile-ud-item">
                                     <div className="profile-ud wider">
                                       <span className="profile-ud-label">
-                                        Country
+                                        Mécanicien
                                       </span>
                                       <span className="profile-ud-value">
-                                        United State
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <div className="profile-ud-item">
-                                    <div className="profile-ud wider">
-                                      <span className="profile-ud-label">
-                                        Nationality
-                                      </span>
-                                      <span className="profile-ud-value">
-                                        United State
+                                        {voyage?.mecanicien || "Non assigné"}
                                       </span>
                                     </div>
                                   </div>
@@ -245,79 +243,42 @@ export default function DetailVoyage({ id }) {
                               <div className="nk-divider divider md" />
                               <div className="nk-block">
                                 <div className="nk-block-head nk-block-head-sm nk-block-between">
-                                  <h5 className="title">Admin Note</h5>
-                                  <a href="#" className="link link-sm">
-                                    + Add Note
-                                  </a>
+                                  <h5 className="title">Trajet</h5>
                                 </div>
                                 {/* .nk-block-head */}
-                                <div className="bq-note">
-                                  <div className="bq-note-item">
-                                    <div className="bq-note-text">
-                                      <p>
-                                        Aproin at metus et dolor tincidunt
-                                        feugiat eu id quam. Pellentesque
-                                        habitant morbi tristique senectus et
-                                        netus et malesuada fames ac turpis
-                                        egestas. Aenean sollicitudin non nunc
-                                        vel pharetra.{" "}
-                                      </p>
-                                    </div>
-                                    <div className="bq-note-meta">
-                                      <span className="bq-note-added">
-                                        Added on{" "}
-                                        <span className="date">
-                                          November 18, 2019
-                                        </span>{" "}
-                                        at <span className="time">5:34 PM</span>
-                                      </span>
-                                      <span className="bq-note-sep sep">|</span>
-                                      <span className="bq-note-by">
-                                        By <span>Softnio</span>
-                                      </span>
-                                      <a
-                                        href="#"
-                                        className="link link-sm link-danger"
+                                <div className="trajet-details">
+                                  {voyage?.trajet &&
+                                  voyage.trajet.length > 0 ? (
+                                    voyage.trajet.map((etape, index) => (
+                                      <div
+                                        key={index}
+                                        className="trajet-etape mb-3 p-3 border rounded"
                                       >
-                                        Delete Note
-                                      </a>
-                                    </div>
-                                  </div>
-                                  {/* .bq-note-item */}
-                                  <div className="bq-note-item">
-                                    <div className="bq-note-text">
-                                      <p>
-                                        Aproin at metus et dolor tincidunt
-                                        feugiat eu id quam. Pellentesque
-                                        habitant morbi tristique senectus et
-                                        netus et malesuada fames ac turpis
-                                        egestas. Aenean sollicitudin non nunc
-                                        vel pharetra.{" "}
-                                      </p>
-                                    </div>
-                                    <div className="bq-note-meta">
-                                      <span className="bq-note-added">
-                                        Added on{" "}
-                                        <span className="date">
-                                          November 18, 2019
-                                        </span>{" "}
-                                        at <span className="time">5:34 PM</span>
-                                      </span>
-                                      <span className="bq-note-sep sep">|</span>
-                                      <span className="bq-note-by">
-                                        By <span>Softnio</span>
-                                      </span>
-                                      <a
-                                        href="#"
-                                        className="link link-sm link-danger"
-                                      >
-                                        Delete Note
-                                      </a>
-                                    </div>
-                                  </div>
-                                  {/* .bq-note-item */}
+                                        <div className="d-flex justify-content-between align-items-center">
+                                          <div>
+                                            <strong>
+                                              {etape.LieuDeDepartLibelle}
+                                            </strong>
+                                            <em className="icon ni ni-arrow-right mx-2"></em>
+                                            <strong>
+                                              {etape.LieuDArriverLibelle}
+                                            </strong>
+                                          </div>
+                                          {etape.heure_depart && (
+                                            <small className="text-muted">
+                                              Départ: {etape.heure_depart}
+                                            </small>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <p className="text-muted">
+                                      Aucun trajet défini
+                                    </p>
+                                  )}
                                 </div>
-                                {/* .bq-note */}
+                                {/* .trajet-details */}
                               </div>
                               {/* .nk-block */}
                             </div>
@@ -396,32 +357,30 @@ export default function DetailVoyage({ id }) {
                               {/* .card-inner */}
                               <div className="card-inner">
                                 <div className="overline-title-alt mb-2">
-                                  In Account
+                                  Places disponibles
                                 </div>
                                 <div className="profile-balance">
                                   <div className="profile-balance-group gx-4">
                                     <div className="profile-balance-sub">
                                       <div className="profile-balance-amount">
                                         <div className="number">
-                                          2,500.00{" "}
-                                          <small className="currency currency-usd">
-                                            USD
-                                          </small>
+                                          {(voyage?.place_disponible_eco || 0) -
+                                            (voyage?.place_prise_eco || 0)}
                                         </div>
                                       </div>
                                       <div className="profile-balance-subtitle">
-                                        Invested Amount
+                                        Places Économiques
                                       </div>
                                     </div>
                                     <div className="profile-balance-sub">
-                                      <span className="profile-balance-plus text-soft">
-                                        <em className="icon ni ni-plus" />
-                                      </span>
                                       <div className="profile-balance-amount">
-                                        <div className="number">1,643.76</div>
+                                        <div className="number">
+                                          {(voyage?.place_disponible_vip || 0) -
+                                            (voyage?.place_prise_vip || 0)}
+                                        </div>
                                       </div>
                                       <div className="profile-balance-subtitle">
-                                        Profit Earned
+                                        Places VIP
                                       </div>
                                     </div>
                                   </div>
@@ -430,24 +389,24 @@ export default function DetailVoyage({ id }) {
                               {/* .card-inner */}
                               <div className="card-inner">
                                 <div className="row text-center">
-                                  <div className="col-4">
+                                  <div className="col-6">
                                     <div className="profile-stats">
-                                      <span className="amount">23</span>
+                                      <span className="amount">
+                                        {voyage?.place_disponible_eco || 0}
+                                      </span>
                                       <span className="sub-text">
-                                        Total Order
+                                        Total Éco
                                       </span>
                                     </div>
                                   </div>
-                                  <div className="col-4">
+                                  <div className="col-6">
                                     <div className="profile-stats">
-                                      <span className="amount">20</span>
-                                      <span className="sub-text">Complete</span>
-                                    </div>
-                                  </div>
-                                  <div className="col-4">
-                                    <div className="profile-stats">
-                                      <span className="amount">3</span>
-                                      <span className="sub-text">Progress</span>
+                                      <span className="amount">
+                                        {voyage?.place_disponible_vip || 0}
+                                      </span>
+                                      <span className="sub-text">
+                                        Total VIP
+                                      </span>
                                     </div>
                                   </div>
                                 </div>

@@ -28,6 +28,28 @@ export default function Dashboard() {
   const [hasSearched, setHasSearched] = useState(false);
   const [originalVoyages, setOriginalVoyages] = useState([]);
   const [originalVoyagesForSearch, setOriginalVoyagesForSearch] = useState([]);
+  const [voyagesDuJour, setVoyagesDuJour] = useState([]);
+  const [autresVoyages, setAutresVoyages] = useState([]);
+  const [dateReference, setDateReference] = useState(null);
+
+  // Fonction pour séparer les voyages en deux blocs
+  const separerVoyages = (voyagesList, dateRecherche = null) => {
+    const today = new Date();
+    const todayString = today.toLocaleDateString("fr-FR");
+
+    // Si une date de recherche est fournie, on l'utilise, sinon on utilise aujourd'hui
+    const dateRef = dateRecherche || todayString;
+    const duJour = voyagesList.filter(
+      (voyage) => voyage.date_voyage === dateRef
+    );
+    const autres = voyagesList.filter(
+      (voyage) => voyage.date_voyage !== dateRef
+    );
+
+    setVoyagesDuJour(duJour);
+    setAutresVoyages(autres);
+    setDateReference(dateRef);
+  };
 
   // Update your fetchVoyages function to save the original voyages
   const fetchVoyages = async () => {
@@ -54,7 +76,7 @@ export default function Dashboard() {
   // Add this reset function
   const resetVoyages = () => {
     setVoyages(originalVoyages);
-    // fetchVoyages();
+    separerVoyages(originalVoyages); // Séparer les voyages en deux blocs
     setHasSearched(false);
     // Reset the form
     setFilters({
@@ -80,6 +102,7 @@ export default function Dashboard() {
         const q = query(
           collection(db, "voyages"),
           where("date_voyage", ">=", today),
+          where("status", "==", "Actif"),
           orderBy("date_voyage", "desc")
         );
 
@@ -116,6 +139,7 @@ export default function Dashboard() {
         });
         setVoyages(result);
         setOriginalVoyages(result); // Save the original list
+        separerVoyages(result); // Séparer en deux blocs
         setLoading(false);
       } catch (err) {
         console.error("Erreur chargement voyages :", err);
@@ -173,6 +197,11 @@ export default function Dashboard() {
       });
 
       setVoyages(result);
+      // Passer la date de recherche si elle existe
+      const dateRecherche = filters.date
+        ? new Date(filters.date + "T00:00:00").toLocaleDateString("fr-FR")
+        : null;
+      separerVoyages(result, dateRecherche); // Séparer les résultats de recherche aussi
       setHasSearched(true);
 
       // Close the modal
@@ -253,7 +282,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className=" nk-body bg-lighter npc-default">
+    <div className=" nk-body bg-lighter npc-default npc-landing">
       <div className="nk-app-root ">
         {/* main @s */}
         <div className="nk-main ">
@@ -551,14 +580,34 @@ export default function Dashboard() {
                       </div>
                     </div>
                     {/* .nk-block-head */}
+
+                    {/* Bloc des voyages du jour */}
                     <div className="nk-block">
+                      <div className="nk-block-head">
+                        <h5 className="nk-block-title">
+                          {(() => {
+                            const today = new Date().toLocaleDateString(
+                              "fr-FR"
+                            );
+                            if (!dateReference || dateReference === today) {
+                              return "Voyages d'aujourd'hui";
+                            } else {
+                              return `Voyages du ${dateReference}`;
+                            }
+                          })()}
+                        </h5>
+                      </div>
                       <div className="row g-gs">
-                        {voyages.length === 0 ? (
-                          <div className="d-flex justify-content-center">
-                            <p className="fs-4">Aucun voyage trouvé.</p>
+                        {voyagesDuJour.length === 0 ? (
+                          <div className="col-12">
+                            <div className="alert alert-info">
+                              <p className="mb-0">
+                                Aucun voyage pour cette journée.
+                              </p>
+                            </div>
                           </div>
                         ) : (
-                          voyages.map((v) => (
+                          voyagesDuJour.map((v) => (
                             <div
                               className="col-md-6 col-xxl-3"
                               key={v.referenceDoc}
@@ -612,7 +661,8 @@ export default function Dashboard() {
                                       -{" "}
                                       <span className="ml-auto">
                                         {v.place_disponible_eco -
-                                          v.place_prise_eco}
+                                          v.place_prise_eco}{" "}
+                                        restantes
                                       </span>
                                     </li>
                                     <li>
@@ -622,7 +672,8 @@ export default function Dashboard() {
                                       -
                                       <span className="ml-auto">
                                         {v.place_disponible_vip -
-                                          v.place_prise_vip}
+                                          v.place_prise_vip}{" "}
+                                        restantes
                                       </span>
                                     </li>
                                     {/* <li>
@@ -635,6 +686,110 @@ export default function Dashboard() {
                                       <span className="w-50">Total Return</span>{" "}
                                       - <span className="ml-auto">125%</span>
                                     </li> */}
+                                  </ul>
+                                  <div className="pricing-action">
+                                    <button
+                                      className="btn btn-outline-light"
+                                      onClick={() => handleRedirect(v)}
+                                    >
+                                      Voir le voyage
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Bloc des autres voyages */}
+                    <div className="nk-block">
+                      <div className="nk-block-head">
+                        <h5 className="nk-block-title">Futures voyages</h5>
+                      </div>
+                      <div className="row g-gs">
+                        {autresVoyages.length === 0 ? (
+                          <div className="col-12">
+                            <div className="alert alert-light">
+                              <p className="mb-0">
+                                Aucun autre voyage disponible.
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          autresVoyages.map((v) => (
+                            <div
+                              className="col-md-6 col-xxl-3"
+                              key={v.referenceDoc}
+                            >
+                              <div className="card card-bordered pricing">
+                                <div className="pricing-head">
+                                  <div className="pricing-title">
+                                    <h4 className="card-title title">
+                                      {v.agence_name}
+                                    </h4>
+                                    <p className="sub-text">
+                                      {v.date_voyage} - {v.libelle_bateau}
+                                    </p>
+                                  </div>
+                                  <div className="card-text center">
+                                    <div className="trajet-list">
+                                      {v.trajet && v.trajet.length > 0 ? (
+                                        v.trajet.map((etape, index) => (
+                                          <div
+                                            key={index}
+                                            className="trajet-etape d-flex align-items-center mb-1"
+                                          >
+                                            <span className="sub-text">
+                                              {etape.LieuDeDepartLibelle}
+                                            </span>
+                                            <em className="icon ni ni-arrow-right mx-2"></em>
+                                            <span className="sub-text">
+                                              {etape.LieuDArriverLibelle}
+                                            </span>
+                                            {etape.heure_depart && (
+                                              <small className="text-muted ms-2">
+                                                ({etape.heure_depart})
+                                              </small>
+                                            )}
+                                          </div>
+                                        ))
+                                      ) : (
+                                        <span className="sub-text">
+                                          Trajet non défini
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="pricing-body">
+                                  <ul className="pricing-features">
+                                    <li>
+                                      <span className="w-50">
+                                        Places économiques
+                                      </span>{" "}
+                                      -{" "}
+                                      <span className="ml-auto">
+                                        {Math.max(
+                                          0,
+                                          (v.place_disponible_eco || 0) -
+                                            (v.place_prise_eco || 0)
+                                        )}{" "}
+                                        restantes
+                                      </span>
+                                    </li>
+                                    <li>
+                                      <span className="w-50">Places VIP</span> -{" "}
+                                      <span className="ml-auto">
+                                        {Math.max(
+                                          0,
+                                          (v.place_disponible_vip || 0) -
+                                            (v.place_prise_vip || 0)
+                                        )}{" "}
+                                        restantes
+                                      </span>
+                                    </li>
                                   </ul>
                                   <div className="pricing-action">
                                     <button

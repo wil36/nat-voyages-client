@@ -35,8 +35,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Load the CSS and JS files
   loadCSS("/assets/css/dashlite.css");
-  // loadCSS("/assets/css/theme.css");
+  loadCSS("/assets/css/theme.css");
   loadJS("/assets/js/bundle.js");
+  loadJS("/assets/js/scripts.js");
 });
 
 // If you want to start measuring performance in your app, pass a function

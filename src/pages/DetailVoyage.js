@@ -11,45 +11,83 @@ export default function DetailVoyage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams();
-  
+
   // État pour le formulaire de billet
   const [ticketForm, setTicketForm] = useState({
-    type_voyage: 'aller_simple', // aller_simple ou aller_retour
-    type_passager: 'adulte', // adulte, enfant, bebe
-    classe: 'economique', // economique ou vip
-    type_piece: 'cni', // cni, passeport, permis
-    numero_piece: '',
-    nom: '',
-    prenom: '',
-    sexe: 'M', // M ou F
-    telephone: '',
-    adresse: '',
+    type_voyage: "Aller simple", // aller_simple ou aller_retour
+    type_passager: "Adulte", // adulte, enfant, bebe
+    classe: "Economie", // economique ou vip
+    type_piece: "Carte d'identité ", // cni, passeport, permis
+    numero_piece: "",
+    nom: "",
+    prenom: "",
+    sexe: "Masculin", // Masculin ou Feminin
+    telephone: "",
+    adresse: "",
     trajets_selectionnes: [], // tableau des indices des trajets sélectionnés
   });
-  
+
   const [montantTotal, setMontantTotal] = useState(0);
+  const [errors, setErrors] = useState({});
+
   const handleBackNavigation = () => {
     navigate("/");
   };
 
+  // Fonction de validation des champs obligatoires
+  const validateForm = () => {
+    const newErrors = {};
+
+    // Vérification des champs obligatoires
+    if (!ticketForm.nom.trim()) {
+      newErrors.nom = "Le nom est obligatoire";
+    }
+    if (!ticketForm.prenom.trim()) {
+      newErrors.prenom = "Le prénom est obligatoire";
+    }
+    if (!ticketForm.numero_piece.trim()) {
+      newErrors.numero_piece = "Le numéro de pièce d'identité est obligatoire";
+    }
+    if (!ticketForm.telephone.trim()) {
+      newErrors.telephone = "Le numéro de téléphone est obligatoire";
+    }
+    if (!ticketForm.adresse.trim()) {
+      newErrors.adresse = "L'adresse est obligatoire";
+    }
+    if (ticketForm.trajets_selectionnes.length === 0) {
+      newErrors.trajets = "Vous devez sélectionner au moins un trajet";
+    }
+
+    // Validation du téléphone (format simple)
+    if (
+      ticketForm.telephone &&
+      !/^[0-9+\-\s]{8,}$/.test(ticketForm.telephone)
+    ) {
+      newErrors.telephone = "Le numéro de téléphone n'est pas valide";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   // Fonction pour mettre à jour le formulaire de billet
   const handleTicketFormChange = (field, value) => {
-    setTicketForm(prev => ({
+    setTicketForm((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
   // Fonction pour gérer la sélection des trajets
   const handleTrajetSelection = (trajetIndex, isSelected) => {
-    setTicketForm(prev => {
-      const newTrajets = isSelected 
+    setTicketForm((prev) => {
+      const newTrajets = isSelected
         ? [...prev.trajets_selectionnes, trajetIndex]
-        : prev.trajets_selectionnes.filter(index => index !== trajetIndex);
-      
+        : prev.trajets_selectionnes.filter((index) => index !== trajetIndex);
+
       return {
         ...prev,
-        trajets_selectionnes: newTrajets
+        trajets_selectionnes: newTrajets,
       };
     });
   };
@@ -63,44 +101,66 @@ export default function DetailVoyage() {
 
     let total = 0;
     const prixBase = voyage.montant || 25000; // Prix de base par trajet
-    
+
     // Multiplicateur selon le type de passager
     const multiplicateurPassager = {
-      'adulte': 1,
-      'enfant': 0.5,
-      'bebe': 0.1
+      Adulte: 1,
+      Enfant: 0.5,
+      Bébé: 0.1,
     };
-    
+
     // Multiplicateur selon la classe
     const multiplicateurClasse = {
-      'economique': 1,
-      'vip': 1.5
+      Economie: 1,
+      Vip: 1.5,
     };
-    
+
     // Multiplicateur selon le type de voyage
     const multiplicateurVoyage = {
-      'aller_simple': 1,
-      'aller_retour': 1.8
+      "Aller simple": 1,
+      "Aller-retour": 1.8,
     };
-    
-    total = ticketForm.trajets_selectionnes.length * prixBase * 
-            multiplicateurPassager[ticketForm.type_passager] * 
-            multiplicateurClasse[ticketForm.classe] * 
-            multiplicateurVoyage[ticketForm.type_voyage];
-    
+
+    total =
+      ticketForm.trajets_selectionnes.length *
+      prixBase *
+      multiplicateurPassager[ticketForm.type_passager] *
+      multiplicateurClasse[ticketForm.classe] *
+      multiplicateurVoyage[ticketForm.type_voyage];
+
     setMontantTotal(Math.round(total));
   }, [ticketForm, voyage]);
 
   // Fonction pour soumettre le formulaire
   const handleTicketSubmit = (e) => {
     e.preventDefault();
-    console.log('Données du billet:', {
+
+    // Validation avant soumission
+    if (!validateForm()) {
+      alert("Veuillez corriger les erreurs dans le formulaire");
+      return;
+    }
+
+    console.log("Données du billet:", {
       ...ticketForm,
       montant_total: montantTotal,
-      voyage_id: voyage.id
+      voyage_id: voyage.id,
     });
+
     // Ici, vous pourrez ajouter la logique pour enregistrer le billet
-    alert(`Billet réservé pour un montant de ${montantTotal.toLocaleString()} FCFA`);
+    alert(
+      `Billet réservé avec succès pour un montant de ${montantTotal.toLocaleString()} FCFA`
+    );
+
+    // Fermer le modal après succès
+    const modalElement = document.getElementById("ticketModal");
+    if (modalElement) {
+      modalElement.classList.remove("show");
+      modalElement.style.display = "none";
+      document.body.classList.remove("modal-open");
+      const backdrop = document.querySelector(".modal-backdrop");
+      if (backdrop) backdrop.remove();
+    }
   };
 
   useEffect(() => {
@@ -252,7 +312,7 @@ export default function DetailVoyage() {
                                       </span>
                                     </div>
                                   </div>
-                                  <div className="profile-ud-item">
+                                  {/* <div className="profile-ud-item">
                                     <div className="profile-ud wider">
                                       <span className="profile-ud-label">
                                         Statut
@@ -261,7 +321,7 @@ export default function DetailVoyage() {
                                         {voyage?.statut}
                                       </span>
                                     </div>
-                                  </div>
+                                  </div> */}
                                   {/* <div className="profile-ud-item">
                                     <div className="profile-ud wider">
                                       <span className="profile-ud-label">
@@ -279,6 +339,34 @@ export default function DetailVoyage() {
                                       </span>
                                       <span className="profile-ud-value">
                                         {voyage?.chauffeur}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="profile-ud-item">
+                                    <div className="profile-ud wider">
+                                      <span className="profile-ud-label">
+                                        Places disponibles Économique
+                                      </span>
+                                      <span className="profile-ud-value">
+                                        {Math.max(
+                                          0,
+                                          (voyage?.place_disponible_eco || 0) -
+                                            (voyage?.place_prise_eco || 0)
+                                        )}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="profile-ud-item">
+                                    <div className="profile-ud wider">
+                                      <span className="profile-ud-label">
+                                        Places disponibles VIP
+                                      </span>
+                                      <span className="profile-ud-value">
+                                        {Math.max(
+                                          0,
+                                          (voyage?.place_disponible_vip || 0) -
+                                            (voyage?.place_prise_vip || 0)
+                                        )}
                                       </span>
                                     </div>
                                   </div>
@@ -332,7 +420,7 @@ export default function DetailVoyage() {
                               <div className="nk-block">
                                 <div className="nk-block-head nk-block-head-sm nk-block-between">
                                   <h5 className="title">Trajet</h5>
-                                  <button 
+                                  <button
                                     className="btn btn-primary btn-sm"
                                     data-toggle="modal"
                                     data-target="#ticketModal"
@@ -380,218 +468,6 @@ export default function DetailVoyage() {
                             {/* .card-inner */}
                           </div>
                           {/* .card-content */}
-                          <div
-                            className="card-aside card-aside-right user-aside toggle-slide toggle-slide-right toggle-break-xxl"
-                            data-content="userAside"
-                            data-toggle-screen="xxl"
-                            data-toggle-overlay="true"
-                            data-toggle-body="true"
-                          >
-                            <div className="card-inner-group" data-simplebar="">
-                              <div className="card-inner">
-                                <div className="user-card user-card-s2">
-                                  <div className="user-avatar lg bg-primary">
-                                    <span>AB</span>
-                                  </div>
-                                  <div className="user-info">
-                                    <div className="badge badge-outline-light badge-pill ucap">
-                                      Investor
-                                    </div>
-                                    <h5>Abu Bin Ishtiyak</h5>
-                                    <span className="sub-text">
-                                      info@softnio.com
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                              {/* .card-inner */}
-                              <div className="card-inner card-inner-sm">
-                                <ul className="btn-toolbar justify-center gx-1">
-                                  <li>
-                                    <a
-                                      href="#"
-                                      className="btn btn-trigger btn-icon"
-                                    >
-                                      <em className="icon ni ni-shield-off" />
-                                    </a>
-                                  </li>
-                                  <li>
-                                    <a
-                                      href="#"
-                                      className="btn btn-trigger btn-icon"
-                                    >
-                                      <em className="icon ni ni-mail" />
-                                    </a>
-                                  </li>
-                                  <li>
-                                    <a
-                                      href="#"
-                                      className="btn btn-trigger btn-icon"
-                                    >
-                                      <em className="icon ni ni-download-cloud" />
-                                    </a>
-                                  </li>
-                                  <li>
-                                    <a
-                                      href="#"
-                                      className="btn btn-trigger btn-icon"
-                                    >
-                                      <em className="icon ni ni-bookmark" />
-                                    </a>
-                                  </li>
-                                  <li>
-                                    <a
-                                      href="#"
-                                      className="btn btn-trigger btn-icon text-danger"
-                                    >
-                                      <em className="icon ni ni-na" />
-                                    </a>
-                                  </li>
-                                </ul>
-                              </div>
-                              {/* .card-inner */}
-                              <div className="card-inner">
-                                <div className="overline-title-alt mb-2">
-                                  Places disponibles
-                                </div>
-                                <div className="profile-balance">
-                                  <div className="profile-balance-group gx-4">
-                                    <div className="profile-balance-sub">
-                                      <div className="profile-balance-amount">
-                                        <div className="number">
-                                          {(voyage?.place_disponible_eco || 0) -
-                                            (voyage?.place_prise_eco || 0)}
-                                        </div>
-                                      </div>
-                                      <div className="profile-balance-subtitle">
-                                        Places Économiques
-                                      </div>
-                                    </div>
-                                    <div className="profile-balance-sub">
-                                      <div className="profile-balance-amount">
-                                        <div className="number">
-                                          {(voyage?.place_disponible_vip || 0) -
-                                            (voyage?.place_prise_vip || 0)}
-                                        </div>
-                                      </div>
-                                      <div className="profile-balance-subtitle">
-                                        Places VIP
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                              {/* .card-inner */}
-                              <div className="card-inner">
-                                <div className="row text-center">
-                                  <div className="col-6">
-                                    <div className="profile-stats">
-                                      <span className="amount">
-                                        {voyage?.place_disponible_eco || 0}
-                                      </span>
-                                      <span className="sub-text">
-                                        Total Éco
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <div className="col-6">
-                                    <div className="profile-stats">
-                                      <span className="amount">
-                                        {voyage?.place_disponible_vip || 0}
-                                      </span>
-                                      <span className="sub-text">
-                                        Total VIP
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                              {/* .card-inner */}
-                              <div className="card-inner">
-                                <h6 className="overline-title-alt mb-2">
-                                  Additional
-                                </h6>
-                                <div className="row g-3">
-                                  <div className="col-6">
-                                    <span className="sub-text">User ID:</span>
-                                    <span>UD003054</span>
-                                  </div>
-                                  <div className="col-6">
-                                    <span className="sub-text">
-                                      Last Login:
-                                    </span>
-                                    <span>15 Feb, 2019 01:02 PM</span>
-                                  </div>
-                                  <div className="col-6">
-                                    <span className="sub-text">
-                                      KYC Status:
-                                    </span>
-                                    <span className="lead-text text-success">
-                                      Approved
-                                    </span>
-                                  </div>
-                                  <div className="col-6">
-                                    <span className="sub-text">
-                                      {voyage?.dateFin}
-                                    </span>
-                                    <span>Nov 24, 2019</span>
-                                  </div>
-                                </div>
-                              </div>
-                              {/* .card-inner */}
-                              <div className="card-inner">
-                                <h6 className="overline-title-alt mb-3">
-                                  Groups
-                                </h6>
-                                <ul className="g-1">
-                                  <li className="btn-group">
-                                    <a
-                                      className="btn btn-xs btn-light btn-dim"
-                                      href="#"
-                                    >
-                                      investor
-                                    </a>
-                                    <a
-                                      className="btn btn-xs btn-icon btn-light btn-dim"
-                                      href="#"
-                                    >
-                                      <em className="icon ni ni-cross" />
-                                    </a>
-                                  </li>
-                                  <li className="btn-group">
-                                    <a
-                                      className="btn btn-xs btn-light btn-dim"
-                                      href="#"
-                                    >
-                                      support
-                                    </a>
-                                    <a
-                                      className="btn btn-xs btn-icon btn-light btn-dim"
-                                      href="#"
-                                    >
-                                      <em className="icon ni ni-cross" />
-                                    </a>
-                                  </li>
-                                  <li className="btn-group">
-                                    <a
-                                      className="btn btn-xs btn-light btn-dim"
-                                      href="#"
-                                    >
-                                      another tag
-                                    </a>
-                                    <a
-                                      className="btn btn-xs btn-icon btn-light btn-dim"
-                                      href="#"
-                                    >
-                                      <em className="icon ni ni-cross" />
-                                    </a>
-                                  </li>
-                                </ul>
-                              </div>
-                              {/* .card-inner */}
-                            </div>
-                            {/* .card-inner */}
-                          </div>
                         </div>
                       </div>
                     </div>
@@ -610,14 +486,26 @@ export default function DetailVoyage() {
       </div>
 
       {/* Modal de vente de billets */}
-      <div className="modal fade" id="ticketModal" tabIndex="-1" role="dialog" aria-labelledby="ticketModalLabel" aria-hidden="true">
+      <div
+        className="modal fade"
+        id="ticketModal"
+        tabIndex="-1"
+        role="dialog"
+        aria-labelledby="ticketModalLabel"
+        aria-hidden="true"
+      >
         <div className="modal-dialog modal-lg" role="document">
           <div className="modal-content">
             <div className="modal-header">
               <h5 className="modal-title" id="ticketModalLabel">
                 Réservation de billet - {voyage?.libelle_bateau}
               </h5>
-              <button type="button" className="close" data-dismiss="modal" aria-label="Close">
+              <button
+                type="button"
+                className="close"
+                data-dismiss="modal"
+                aria-label="Close"
+              >
                 <span aria-hidden="true">&times;</span>
               </button>
             </div>
@@ -629,8 +517,22 @@ export default function DetailVoyage() {
                     <div className="card bg-light">
                       <div className="card-body">
                         <h6 className="card-title">Places disponibles</h6>
-                        <p className="mb-1">Économique: {(voyage?.place_disponible_eco || 0) - (voyage?.place_prise_eco || 0)}</p>
-                        <p className="mb-0">VIP: {(voyage?.place_disponible_vip || 0) - (voyage?.place_prise_vip || 0)}</p>
+                        <p className="mb-1">
+                          Économique:{" "}
+                          {Math.max(
+                            0,
+                            (voyage?.place_disponible_eco || 0) -
+                              (voyage?.place_prise_eco || 0)
+                          )}
+                        </p>
+                        <p className="mb-0">
+                          VIP:{" "}
+                          {Math.max(
+                            0,
+                            (voyage?.place_disponible_vip || 0) -
+                              (voyage?.place_prise_vip || 0)
+                          )}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -638,7 +540,9 @@ export default function DetailVoyage() {
                     <div className="card bg-primary text-white">
                       <div className="card-body">
                         <h6 className="card-title">Montant total</h6>
-                        <h4 className="mb-0">{montantTotal.toLocaleString()} FCFA</h4>
+                        <h4 className="mb-0">
+                          {montantTotal.toLocaleString()} FCFA
+                        </h4>
                       </div>
                     </div>
                   </div>
@@ -647,28 +551,52 @@ export default function DetailVoyage() {
                 {/* Type de voyage */}
                 <div className="form-group mb-3">
                   <label className="form-label">Type de voyage</label>
-                  <div className="custom-control-group">
-                    <div className="custom-control custom-radio">
-                      <input
-                        type="radio"
-                        id="aller_simple"
-                        name="type_voyage"
-                        className="custom-control-input"
-                        checked={ticketForm.type_voyage === 'aller_simple'}
-                        onChange={() => handleTicketFormChange('type_voyage', 'aller_simple')}
-                      />
-                      <label className="custom-control-label" htmlFor="aller_simple">Aller simple</label>
+                  <div className="row">
+                    <div className="col-md-6">
+                      <div className="custom-control custom-radio mb-2">
+                        <input
+                          type="radio"
+                          id="aller_simple"
+                          name="type_voyage"
+                          className="custom-control-input"
+                          checked={ticketForm.type_voyage === "Aller simple"}
+                          onChange={() =>
+                            handleTicketFormChange(
+                              "type_voyage",
+                              "Aller simple"
+                            )
+                          }
+                        />
+                        <label
+                          className="custom-control-label"
+                          htmlFor="Aller simple"
+                        >
+                          Aller simple
+                        </label>
+                      </div>
                     </div>
-                    <div className="custom-control custom-radio">
-                      <input
-                        type="radio"
-                        id="aller_retour"
-                        name="type_voyage"
-                        className="custom-control-input"
-                        checked={ticketForm.type_voyage === 'aller_retour'}
-                        onChange={() => handleTicketFormChange('type_voyage', 'aller_retour')}
-                      />
-                      <label className="custom-control-label" htmlFor="aller_retour">Aller-retour</label>
+                    <div className="col-md-6">
+                      <div className="custom-control custom-radio mb-2">
+                        <input
+                          type="radio"
+                          id="aller_retour"
+                          name="type_voyage"
+                          className="custom-control-input"
+                          checked={ticketForm.type_voyage === "Aller-retour"}
+                          onChange={() =>
+                            handleTicketFormChange(
+                              "type_voyage",
+                              "Aller-retour"
+                            )
+                          }
+                        />
+                        <label
+                          className="custom-control-label"
+                          htmlFor="aller_retour"
+                        >
+                          Aller-retour
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -676,54 +604,83 @@ export default function DetailVoyage() {
                 {/* Type de passager */}
                 <div className="form-group mb-3">
                   <label className="form-label">Type de passager</label>
-                  <div className="custom-control-group">
-                    <div className="custom-control custom-radio">
-                      <input
-                        type="radio"
-                        id="adulte"
-                        name="type_passager"
-                        className="custom-control-input"
-                        checked={ticketForm.type_passager === 'adulte'}
-                        onChange={() => handleTicketFormChange('type_passager', 'adulte')}
-                      />
-                      <label className="custom-control-label" htmlFor="adulte">Adulte</label>
+                  <div className="row">
+                    <div className="col-md-4">
+                      <div className="custom-control custom-radio mb-2">
+                        <input
+                          type="radio"
+                          id="Adulte"
+                          defaultChecked
+                          name="type_passager"
+                          className="custom-control-input"
+                          checked={ticketForm.type_passager === "Adulte"}
+                          onChange={() =>
+                            handleTicketFormChange("type_passager", "Adulte")
+                          }
+                        />
+                        <label
+                          className="custom-control-label"
+                          htmlFor="Adulte"
+                        >
+                          Adulte
+                        </label>
+                      </div>
                     </div>
-                    <div className="custom-control custom-radio">
-                      <input
-                        type="radio"
-                        id="enfant"
-                        name="type_passager"
-                        className="custom-control-input"
-                        checked={ticketForm.type_passager === 'enfant'}
-                        onChange={() => handleTicketFormChange('type_passager', 'enfant')}
-                      />
-                      <label className="custom-control-label" htmlFor="enfant">Enfant (50% du prix)</label>
+                    <div className="col-md-4">
+                      <div className="custom-control custom-radio mb-2">
+                        <input
+                          type="radio"
+                          id="Enfant"
+                          name="type_passager"
+                          className="custom-control-input"
+                          checked={ticketForm.type_passager === "Enfant"}
+                          onChange={() =>
+                            handleTicketFormChange("type_passager", "Enfant")
+                          }
+                        />
+                        <label
+                          className="custom-control-label"
+                          htmlFor="Enfant"
+                        >
+                          Enfant
+                        </label>
+                      </div>
                     </div>
-                    <div className="custom-control custom-radio">
-                      <input
-                        type="radio"
-                        id="bebe"
-                        name="type_passager"
-                        className="custom-control-input"
-                        checked={ticketForm.type_passager === 'bebe'}
-                        onChange={() => handleTicketFormChange('type_passager', 'bebe')}
-                      />
-                      <label className="custom-control-label" htmlFor="bebe">Bébé (10% du prix)</label>
+                    <div className="col-md-4">
+                      <div className="custom-control custom-radio mb-2">
+                        <input
+                          type="radio"
+                          id="Bébé"
+                          name="type_passager"
+                          className="custom-control-input"
+                          checked={ticketForm.type_passager === "Bébé"}
+                          onChange={() =>
+                            handleTicketFormChange("type_passager", "Bébé")
+                          }
+                        />
+                        <label className="custom-control-label" htmlFor="Bébé">
+                          Bébé
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Classe */}
                 <div className="form-group mb-3">
-                  <label className="form-label" htmlFor="classe">Classe</label>
+                  <label className="form-label" htmlFor="classe">
+                    Classe
+                  </label>
                   <select
                     className="form-control"
                     id="classe"
                     value={ticketForm.classe}
-                    onChange={(e) => handleTicketFormChange('classe', e.target.value)}
+                    onChange={(e) =>
+                      handleTicketFormChange("classe", e.target.value)
+                    }
                   >
-                    <option value="economique">Économique</option>
-                    <option value="vip">VIP (+50% du prix)</option>
+                    <option value="Economie">Économique</option>
+                    <option value="Vip">VIP</option>
                   </select>
                 </div>
 
@@ -731,17 +688,25 @@ export default function DetailVoyage() {
                   {/* Type de pièce d'identité */}
                   <div className="col-md-6">
                     <div className="form-group mb-3">
-                      <label className="form-label" htmlFor="type_piece">Type de pièce d'identité</label>
+                      <label className="form-label" htmlFor="type_piece">
+                        Type de pièce d'identité
+                      </label>
                       <select
                         className="form-control"
                         id="type_piece"
                         value={ticketForm.type_piece}
-                        onChange={(e) => handleTicketFormChange('type_piece', e.target.value)}
+                        onChange={(e) =>
+                          handleTicketFormChange("type_piece", e.target.value)
+                        }
                         required
                       >
-                        <option value="cni">Carte Nationale d'Identité</option>
-                        <option value="passeport">Passeport</option>
-                        <option value="permis">Permis de conduire</option>
+                        <option value="Carte d'identité">
+                          Carte d'identité
+                        </option>
+                        <option value="Passeport">Passeport</option>
+                        <option value="Acte de Naissance">
+                          Acte de Naissance
+                        </option>
                       </select>
                     </div>
                   </div>
@@ -749,15 +714,24 @@ export default function DetailVoyage() {
                   {/* Numéro de pièce */}
                   <div className="col-md-6">
                     <div className="form-group mb-3">
-                      <label className="form-label" htmlFor="numero_piece">Numéro de pièce d'identité</label>
+                      <label className="form-label" htmlFor="numero_piece">
+                        Numéro de pièce d'identité
+                      </label>
                       <input
-                        type="text"
+                        type="tel"
                         className="form-control"
                         id="numero_piece"
                         value={ticketForm.numero_piece}
-                        onChange={(e) => handleTicketFormChange('numero_piece', e.target.value)}
+                        onChange={(e) =>
+                          handleTicketFormChange("numero_piece", e.target.value)
+                        }
                         required
                       />
+                      {errors.numero_piece && (
+                        <small className="text-danger">
+                          {errors.numero_piece}
+                        </small>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -766,30 +740,44 @@ export default function DetailVoyage() {
                   {/* Nom */}
                   <div className="col-md-6">
                     <div className="form-group mb-3">
-                      <label className="form-label" htmlFor="nom">Nom</label>
+                      <label className="form-label" htmlFor="nom">
+                        Nom
+                      </label>
                       <input
                         type="text"
                         className="form-control"
                         id="nom"
                         value={ticketForm.nom}
-                        onChange={(e) => handleTicketFormChange('nom', e.target.value)}
+                        onChange={(e) =>
+                          handleTicketFormChange("nom", e.target.value)
+                        }
                         required
                       />
+                      {errors.nom && (
+                        <small className="text-danger">{errors.nom}</small>
+                      )}
                     </div>
                   </div>
 
                   {/* Prénom */}
                   <div className="col-md-6">
                     <div className="form-group mb-3">
-                      <label className="form-label" htmlFor="prenom">Prénom</label>
+                      <label className="form-label" htmlFor="prenom">
+                        Prénom
+                      </label>
                       <input
                         type="text"
                         className="form-control"
                         id="prenom"
                         value={ticketForm.prenom}
-                        onChange={(e) => handleTicketFormChange('prenom', e.target.value)}
+                        onChange={(e) =>
+                          handleTicketFormChange("prenom", e.target.value)
+                        }
                         required
                       />
+                      {errors.prenom && (
+                        <small className="text-danger">{errors.prenom}</small>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -797,28 +785,46 @@ export default function DetailVoyage() {
                 {/* Sexe */}
                 <div className="form-group mb-3">
                   <label className="form-label">Sexe</label>
-                  <div className="custom-control-group">
-                    <div className="custom-control custom-radio">
-                      <input
-                        type="radio"
-                        id="sexe_m"
-                        name="sexe"
-                        className="custom-control-input"
-                        checked={ticketForm.sexe === 'M'}
-                        onChange={() => handleTicketFormChange('sexe', 'M')}
-                      />
-                      <label className="custom-control-label" htmlFor="sexe_m">Masculin</label>
+                  <div className="row">
+                    <div className="col-md-6">
+                      <div className="custom-control custom-radio mb-2">
+                        <input
+                          type="radio"
+                          id="sexe_m"
+                          name="sexe"
+                          className="custom-control-input"
+                          checked={ticketForm.sexe === "Masculin"}
+                          onChange={() =>
+                            handleTicketFormChange("sexe", "Masculin")
+                          }
+                        />
+                        <label
+                          className="custom-control-label"
+                          htmlFor="sexe_m"
+                        >
+                          Masculin
+                        </label>
+                      </div>
                     </div>
-                    <div className="custom-control custom-radio">
-                      <input
-                        type="radio"
-                        id="sexe_f"
-                        name="sexe"
-                        className="custom-control-input"
-                        checked={ticketForm.sexe === 'F'}
-                        onChange={() => handleTicketFormChange('sexe', 'F')}
-                      />
-                      <label className="custom-control-label" htmlFor="sexe_f">Féminin</label>
+                    <div className="col-md-6">
+                      <div className="custom-control custom-radio mb-2">
+                        <input
+                          type="radio"
+                          id="sexe_f"
+                          name="sexe"
+                          className="custom-control-input"
+                          checked={ticketForm.sexe === "Féminin"}
+                          onChange={() =>
+                            handleTicketFormChange("sexe", "Féminin")
+                          }
+                        />
+                        <label
+                          className="custom-control-label"
+                          htmlFor="sexe_f"
+                        >
+                          Féminin
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -827,30 +833,46 @@ export default function DetailVoyage() {
                   {/* Téléphone */}
                   <div className="col-md-6">
                     <div className="form-group mb-3">
-                      <label className="form-label" htmlFor="telephone">Numéro de téléphone</label>
+                      <label className="form-label" htmlFor="telephone">
+                        Numéro de téléphone
+                      </label>
                       <input
                         type="tel"
                         className="form-control"
                         id="telephone"
                         value={ticketForm.telephone}
-                        onChange={(e) => handleTicketFormChange('telephone', e.target.value)}
+                        onChange={(e) =>
+                          handleTicketFormChange("telephone", e.target.value)
+                        }
                         required
                       />
+                      {errors.telephone && (
+                        <small className="text-danger">
+                          {errors.telephone}
+                        </small>
+                      )}
                     </div>
                   </div>
 
                   {/* Adresse */}
                   <div className="col-md-6">
                     <div className="form-group mb-3">
-                      <label className="form-label" htmlFor="adresse">Adresse</label>
+                      <label className="form-label" htmlFor="adresse">
+                        Adresse
+                      </label>
                       <input
                         type="text"
                         className="form-control"
                         id="adresse"
                         value={ticketForm.adresse}
-                        onChange={(e) => handleTicketFormChange('adresse', e.target.value)}
+                        onChange={(e) =>
+                          handleTicketFormChange("adresse", e.target.value)
+                        }
                         required
                       />
+                      {errors.adresse && (
+                        <small className="text-danger">{errors.adresse}</small>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -861,15 +883,25 @@ export default function DetailVoyage() {
                   <div className="border rounded p-3">
                     {voyage?.trajet && voyage.trajet.length > 0 ? (
                       voyage.trajet.map((etape, index) => (
-                        <div key={index} className="custom-control custom-checkbox mb-2">
+                        <div
+                          key={index}
+                          className="custom-control col-md-12 custom-checkbox mb-2 ml-1 row"
+                        >
                           <input
                             type="checkbox"
                             className="custom-control-input"
                             id={`trajet_${index}`}
-                            checked={ticketForm.trajets_selectionnes.includes(index)}
-                            onChange={(e) => handleTrajetSelection(index, e.target.checked)}
+                            checked={ticketForm.trajets_selectionnes.includes(
+                              index
+                            )}
+                            onChange={(e) =>
+                              handleTrajetSelection(index, e.target.checked)
+                            }
                           />
-                          <label className="custom-control-label" htmlFor={`trajet_${index}`}>
+                          <label
+                            className="custom-control-label"
+                            htmlFor={`trajet_${index}`}
+                          >
                             <strong>{etape.LieuDeDepartLibelle}</strong>
                             <em className="icon ni ni-arrow-right mx-2"></em>
                             <strong>{etape.LieuDArriverLibelle}</strong>
@@ -879,17 +911,23 @@ export default function DetailVoyage() {
                               </small>
                             )}
                           </label>
+                          <br />
                         </div>
                       ))
                     ) : (
                       <p className="text-muted">Aucun trajet disponible</p>
                     )}
                   </div>
+                  {errors.trajets && (
+                    <small className="text-danger">{errors.trajets}</small>
+                  )}
                 </div>
 
                 {/* Montant total (lecture seule) */}
                 <div className="form-group mb-3">
-                  <label className="form-label" htmlFor="montant_total">Montant total à payer</label>
+                  <label className="form-label" htmlFor="montant_total">
+                    Montant total à payer
+                  </label>
                   <input
                     type="text"
                     className="form-control bg-light"
@@ -900,11 +938,21 @@ export default function DetailVoyage() {
                 </div>
 
                 <div className="modal-footer">
-                  <button type="button" className="btn btn-secondary" data-dismiss="modal">Annuler</button>
-                  <button 
-                    type="submit" 
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    data-dismiss="modal"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
                     className="btn btn-primary"
-                    disabled={!ticketForm.trajets_selectionnes.length || !ticketForm.nom || !ticketForm.prenom}
+                    disabled={
+                      !ticketForm.trajets_selectionnes.length ||
+                      !ticketForm.nom ||
+                      !ticketForm.prenom
+                    }
                   >
                     Réserver le billet
                   </button>

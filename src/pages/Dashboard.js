@@ -292,14 +292,14 @@ export default function Dashboard() {
     fetchLieux();
   }, []);
 
-  if (loading)
-    return (
-      <div className="d-flex justify-content-center align-items-center vh-100">
-        <div className="spinner-grow text-primary" role="status">
-          <span className="sr-only">Loading...</span>
-        </div>
-      </div>
-    );
+  // if (loading)
+  //   return (
+  //     <div className="d-flex justify-content-center align-items-center vh-100">
+  //       <div className="spinner-grow text-primary" role="status">
+  //         <span className="sr-only">Loading...</span>
+  //       </div>
+  //     </div>
+  //   );
 
   const handleRedirect = (voyage) => {
     try {

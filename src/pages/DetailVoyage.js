@@ -1,5 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { collection, doc, getDoc } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDoc,
+  updateDoc,
+  addDoc,
+  query,
+  where,
+  getDocs,
+  serverTimestamp,
+} from "firebase/firestore";
 import { db } from "../firebase";
 import NavBarComponent from "../components/NavBarComponent";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
@@ -14,7 +24,7 @@ export default function DetailVoyage() {
 
   // État pour le formulaire de billet
   const [ticketForm, setTicketForm] = useState({
-    type_voyage: "Aller simple", // aller_simple ou aller_retour
+    type_voyage: "aller_simple", // aller_simple ou aller_retour
     type_passager: "Adulte", // adulte, enfant, bebe
     classe: "Economie", // economique ou vip
     type_piece: "Carte d'identité ", // cni, passeport, permis
@@ -25,6 +35,7 @@ export default function DetailVoyage() {
     telephone: "",
     adresse: "",
     trajets_selectionnes: [], // tableau des indices des trajets sélectionnés
+    numero_billet_parent: "", // pour les bébés
   });
 
   const [montantTotal, setMontantTotal] = useState(0);
@@ -32,6 +43,26 @@ export default function DetailVoyage() {
 
   const handleBackNavigation = () => {
     navigate("/");
+  };
+
+  // Fonction pour créer la facture (à implémenter selon vos besoins)
+  const creerFacture = (venteId, donneesVente) => {
+    console.log("Création de facture pour la vente:", venteId);
+    // TODO: Implémenter la génération de facture PDF ou autre format
+    // Vous pouvez utiliser des bibliothèques comme jsPDF, react-pdf, etc.
+
+    const factureData = {
+      numeroFacture: `FACT-${venteId}`,
+      dateFacture: new Date().toLocaleDateString("fr-FR"),
+      client: donneesVente.client_name,
+      montant: donneesVente.montant_ttc,
+      voyage: donneesVente.voyage_reference,
+      agence: donneesVente.agence_name,
+    };
+
+    console.log("Données facture:", factureData);
+    // Retourner les données pour utilisation future
+    return factureData;
   };
 
   // Fonction de validation des champs obligatoires
@@ -56,6 +87,13 @@ export default function DetailVoyage() {
     }
     if (ticketForm.trajets_selectionnes.length === 0) {
       newErrors.trajets = "Vous devez sélectionner au moins un trajet";
+    }
+    if (
+      ticketForm.type_passager === "bebe" &&
+      !ticketForm.numero_billet_parent.trim()
+    ) {
+      newErrors.numero_billet_parent =
+        "Le numéro de billet du parent est obligatoire pour un bébé";
     }
 
     // Validation du téléphone (format simple)
@@ -117,8 +155,8 @@ export default function DetailVoyage() {
 
     // Multiplicateur selon le type de voyage
     const multiplicateurVoyage = {
-      "Aller simple": 1,
-      "Aller-retour": 1.8,
+      aller_simple: 1,
+      aller_retour: 1.8,
     };
 
     total =
@@ -132,7 +170,7 @@ export default function DetailVoyage() {
   }, [ticketForm, voyage]);
 
   // Fonction pour soumettre le formulaire
-  const handleTicketSubmit = (e) => {
+  const handleTicketSubmit = async (e) => {
     e.preventDefault();
 
     // Validation avant soumission
@@ -141,15 +179,125 @@ export default function DetailVoyage() {
       return;
     }
 
-    console.log("Données du billet:", {
-      ...ticketForm,
-      montant_total: montantTotal,
-      voyage_id: voyage.id,
-    });
+    try {
+      console.log("Début de l'enregistrement du billet...");
 
-    // Ici, vous pourrez ajouter la logique pour enregistrer le billet
+    // 1. Mettre à jour les places prises dans la collection Voyage
+    const voyageRef = doc(db, "voyages", voyage.id);
+    const placeField =
+      ticketForm.classe === "economique"
+        ? "place_prise_eco"
+        : "place_prise_vip";
+    const currentPlaces =
+      ticketForm.classe === "economique"
+        ? voyage.place_prise_eco || 0
+        : voyage.place_prise_vip || 0;
+
+    await updateDoc(voyageRef, {
+      [placeField]: currentPlaces + 1,
+    });
+    console.log("Places mises à jour dans le voyage");
+
+    // 2. Vérifier/créer le client dans la collection clients
+    let clientReference = null;
+    const clientsQuery = query(
+      collection(db, "clients"),
+      where("type_piece", "==", ticketForm.type_piece),
+      where("numero_piece", "==", ticketForm.numero_piece)
+    );
+
+    const clientsSnapshot = await getDocs(clientsQuery);
+
+    if (!clientsSnapshot.empty) {
+      // Client existe déjà
+      const clientDoc = clientsSnapshot.docs[0];
+      clientReference = clientDoc.id;
+      console.log("Client existant trouvé:", clientReference);
+    } else {
+      // Créer nouveau client
+      const nouveauClient = {
+        nom: ticketForm.nom,
+        prenom: ticketForm.prenom,
+        adresse: ticketForm.adresse,
+        telephone: ticketForm.telephone,
+        numero_piece: ticketForm.numero_piece,
+        type_de_piece: ticketForm.type_piece,
+        sexe: ticketForm.sexe,
+        createAt: serverTimestamp(),
+        display_name: ticketForm.nom + " " + ticketForm.prenom,
+      };
+
+      const clientDocRef = await addDoc(
+        collection(db, "clients"),
+        nouveauClient
+      );
+      clientReference = clientDocRef.id;
+      console.log("Nouveau client créé:", clientReference);
+    }
+
+    // 3. Enregistrer la vente dans la collection vente
+    const nouvelleVente = {
+      noms: ticketForm.nom || "",
+      prenoms: ticketForm.prenom || "",
+      adresse: ticketForm.adresse || "",
+      tel: ticketForm.telephone || "",
+      numero: ticketForm.numero_piece || "",
+      type_piece: ticketForm.type_piece || "",
+      montant_ttc: montantTotal || 0,
+      numero_billet_parent:
+        ticketForm.type_passager === "bebe"
+          ? ticketForm.numero_billet_parent || ""
+          : "",
+      classe: ticketForm.classe || "",
+      create_time: serverTimestamp(),
+      statuts: "Payer",
+      voyage_reference: voyage?.id || id || "",
+      trajet: (ticketForm.trajets_selectionnes || []).map(
+        (index) => (voyage?.trajet && voyage.trajet[index]) ? voyage.trajet[index] : {}
+      ),
+      client_reference: clientReference || "",
+      client_name: `${ticketForm.prenom || ""} ${ticketForm.nom || ""}`.trim(),
+      type_paiement: "Mobile Money",
+      agent_reference: "",
+      agent_name: "",
+      sexe_client: ticketForm.sexe || "",
+      isGo: false,
+      agence_reference: voyage?.agence_reference || "",
+      agence_name: voyage?.agence_name || "",
+      type_passager: ticketForm.type_passager || "",
+      type_voyage: ticketForm.type_voyage || "",
+      createAt: serverTimestamp(),
+    };
+
+    const venteDocRef = await addDoc(collection(db, "vente"), nouvelleVente);
+    console.log("Vente enregistrée:", venteDocRef.id);
+
+    // 4. Créer la sous-collection transaction AVS-820V
+    const transaction = {
+      montant_total: montantTotal || 0,
+      statuts: "actif",
+      taxes: 0,
+      createAt: serverTimestamp(),
+      agentName: "",
+      agentReference: "",
+      agenceName: voyage?.agence_name || "",
+      agenceReference: voyage?.agence_reference || "",
+    };
+
+    await addDoc(
+      collection(db, "vente", venteDocRef.id, "transaction_AVS-820V"),
+      transaction
+    );
+    console.log("Transaction créée");
+
+    // 5. Créer la facture (préparation pour future implémentation)
+    const factureData = creerFacture(venteDocRef.id, nouvelleVente);
+    console.log("Facture préparée:", factureData);
+
     alert(
-      `Billet réservé avec succès pour un montant de ${montantTotal.toLocaleString()} FCFA`
+      `Billet réservé avec succès pour un montant de ${montantTotal.toLocaleString()} FCFA\nNuméro de vente: ${
+        venteDocRef.id
+      }\nFacture: ${factureData.numeroFacture}`
     );
 
     // Fermer le modal après succès
@@ -160,6 +308,10 @@ export default function DetailVoyage() {
       document.body.classList.remove("modal-open");
       const backdrop = document.querySelector(".modal-backdrop");
       if (backdrop) backdrop.remove();
+    }
+    } catch (error) {
+      console.error("Erreur lors de l'enregistrement:", error);
+      alert("Erreur lors de l'enregistrement du billet. Veuillez réessayer.");
     }
   };
 
@@ -559,17 +711,17 @@ export default function DetailVoyage() {
                           id="aller_simple"
                           name="type_voyage"
                           className="custom-control-input"
-                          checked={ticketForm.type_voyage === "Aller simple"}
+                          checked={ticketForm.type_voyage === "aller_simple"}
                           onChange={() =>
                             handleTicketFormChange(
                               "type_voyage",
-                              "Aller simple"
+                              "aller_simple"
                             )
                           }
                         />
                         <label
                           className="custom-control-label"
-                          htmlFor="Aller simple"
+                          htmlFor="aller_simple"
                         >
                           Aller simple
                         </label>
@@ -582,11 +734,11 @@ export default function DetailVoyage() {
                           id="aller_retour"
                           name="type_voyage"
                           className="custom-control-input"
-                          checked={ticketForm.type_voyage === "Aller-retour"}
+                          checked={ticketForm.type_voyage === "aller_retour"}
                           onChange={() =>
                             handleTicketFormChange(
                               "type_voyage",
-                              "Aller-retour"
+                              "aller_retour"
                             )
                           }
                         />
@@ -876,6 +1028,37 @@ export default function DetailVoyage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Numéro de billet parent (uniquement pour les bébés) */}
+                {ticketForm.type_passager === "bebe" && (
+                  <div className="form-group mb-3">
+                    <label
+                      className="form-label"
+                      htmlFor="numero_billet_parent"
+                    >
+                      Numéro de billet du parent
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      id="numero_billet_parent"
+                      value={ticketForm.numero_billet_parent}
+                      onChange={(e) =>
+                        handleTicketFormChange(
+                          "numero_billet_parent",
+                          e.target.value
+                        )
+                      }
+                      placeholder="Ex: VB2024001"
+                      required
+                    />
+                    {errors.numero_billet_parent && (
+                      <small className="text-danger">
+                        {errors.numero_billet_parent}
+                      </small>
+                    )}
+                  </div>
+                )}
 
                 {/* Sélection des trajets */}
                 <div className="form-group mb-4">

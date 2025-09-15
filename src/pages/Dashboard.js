@@ -27,28 +27,59 @@ export default function Dashboard() {
   });
   const [hasSearched, setHasSearched] = useState(false);
   const [originalVoyages, setOriginalVoyages] = useState([]);
-  const [originalVoyagesForSearch, setOriginalVoyagesForSearch] = useState([]);
   const [voyagesDuJour, setVoyagesDuJour] = useState([]);
   const [autresVoyages, setAutresVoyages] = useState([]);
   const [dateReference, setDateReference] = useState(null);
 
   // Fonction pour séparer les voyages en deux blocs
-  const separerVoyages = (voyagesList, dateRecherche = null) => {
-    const today = new Date();
-    const todayString = today.toLocaleDateString("fr-FR");
+  const separerVoyages = (
+    voyagesList,
+    dateRecherche = null,
+    isSearchResult = false
+  ) => {
+    if (isSearchResult && dateRecherche) {
+      // Mode recherche : afficher les résultats dans le premier bloc
+      const voyagesRecherche = voyagesList;
 
-    // Si une date de recherche est fournie, on l'utilise, sinon on utilise aujourd'hui
-    const dateRef = dateRecherche || todayString;
-    const duJour = voyagesList.filter(
-      (voyage) => voyage.date_voyage === dateRef
-    );
-    const autres = voyagesList.filter(
-      (voyage) => voyage.date_voyage !== dateRef
-    );
+      // Trouver les autres voyages avec les mêmes lieux mais dates différentes
+      const autresVoyagesSimilaires = originalVoyages.filter((voyage) => {
+        // Exclure les voyages déjà dans les résultats de recherche
+        const dejaInclus = voyagesRecherche.some((v) => v.id === voyage.id);
+        if (dejaInclus) return false;
 
-    setVoyagesDuJour(duJour);
-    setAutresVoyages(autres);
-    setDateReference(dateRef);
+        // Vérifier si ce voyage a les mêmes lieux de départ/arrivée
+        const memesDepartArrivee = voyage.trajet?.some((etape) => {
+          return (
+            (!filters.depart ||
+              etape.LieuDeDepartReference?.id === filters.depart) &&
+            (!filters.arrivee ||
+              etape.LieuDArriverReference?.id === filters.arrivee)
+          );
+        });
+
+        return memesDepartArrivee;
+      });
+
+      setVoyagesDuJour(voyagesRecherche);
+      setAutresVoyages(autresVoyagesSimilaires);
+      setDateReference(dateRecherche);
+    } else {
+      // Mode normal : séparer par date (aujourd'hui vs autres)
+      const today = new Date();
+      const todayString = today.toLocaleDateString("fr-FR");
+
+      const dateRef = dateRecherche || todayString;
+      const duJour = voyagesList.filter(
+        (voyage) => voyage.date_voyage === dateRef
+      );
+      const autres = voyagesList.filter(
+        (voyage) => voyage.date_voyage !== dateRef
+      );
+
+      setVoyagesDuJour(duJour);
+      setAutresVoyages(autres);
+      setDateReference(dateRef);
+    }
   };
 
   // Update your fetchVoyages function to save the original voyages
@@ -76,7 +107,7 @@ export default function Dashboard() {
   // Add this reset function
   const resetVoyages = () => {
     setVoyages(originalVoyages);
-    separerVoyages(originalVoyages); // Séparer les voyages en deux blocs
+    separerVoyages(originalVoyages, null, false); // Séparer les voyages en deux blocs (mode normal)
     setHasSearched(false);
     // Reset the form
     setFilters({
@@ -139,7 +170,7 @@ export default function Dashboard() {
         });
         setVoyages(result);
         setOriginalVoyages(result); // Save the original list
-        separerVoyages(result); // Séparer en deux blocs
+        separerVoyages(result, null, false); // Séparer en deux blocs (mode normal)
         setLoading(false);
       } catch (err) {
         console.error("Erreur chargement voyages :", err);
@@ -152,32 +183,31 @@ export default function Dashboard() {
   const handleSearch = (e) => {
     e.preventDefault();
     try {
-      setOriginalVoyagesForSearch(originalVoyages);
+      console.log("Début de la recherche avec filtres:", filters);
+      console.log("Voyages originaux:", originalVoyages.length);
+
       // Filter client-side using originalVoyages
-      let result = originalVoyagesForSearch.filter((voyage) => {
+      let result = originalVoyages.filter((voyage) => {
         let matchesFilter = true;
 
         // Date filter
         if (filters.date) {
-          const searchDate = new Date(filters.date);
-          // Parse the already formatted date string
-          const voyageDateParts = voyage.date_voyage.split("/");
-          const voyageDate = new Date(
-            voyageDateParts[2],
-            voyageDateParts[1] - 1,
-            voyageDateParts[0]
-          );
+          const searchDate = new Date(filters.date + "T00:00:00");
+          const searchDateString = searchDate.toLocaleDateString("fr-FR");
+          console.log("Date de recherche:", searchDateString);
+          console.log("Date du voyage:", voyage.date_voyage);
 
-          if (voyageDate.toDateString() !== searchDate.toDateString()) {
+          if (voyage.date_voyage !== searchDateString) {
             matchesFilter = false;
+            console.log("Date non correspondante:", voyage.date_voyage);
           }
         }
 
         // Departure filter - check if departure location exists in trajet
         if (filters.depart && matchesFilter) {
-          const hasDepart = voyage.trajet?.some(
-            (etape) => etape.LieuDeDepart === filters.depart
-          );
+          const hasDepart = voyage.trajet?.some((etape) => {
+            return etape.LieuDeDepartReference.id === filters.depart;
+          });
           if (!hasDepart) {
             matchesFilter = false;
           }
@@ -186,7 +216,7 @@ export default function Dashboard() {
         // Arrival filter - check if arrival location exists in trajet
         if (filters.arrivee && matchesFilter) {
           const hasArrivee = voyage.trajet?.some(
-            (etape) => etape.LieuDArriver === filters.arrivee
+            (etape) => etape.LieuDArriverReference.id === filters.arrivee
           );
           if (!hasArrivee) {
             matchesFilter = false;
@@ -196,22 +226,49 @@ export default function Dashboard() {
         return matchesFilter;
       });
 
+      console.log("Résultats de la recherche:", result.length);
       setVoyages(result);
       // Passer la date de recherche si elle existe
       const dateRecherche = filters.date
         ? new Date(filters.date + "T00:00:00").toLocaleDateString("fr-FR")
         : null;
-      separerVoyages(result, dateRecherche); // Séparer les résultats de recherche aussi
+      separerVoyages(result, dateRecherche, true); // Séparer les résultats de recherche aussi
       setHasSearched(true);
 
-      // Close the modal
-      const modalElement = document.getElementById("modalForm");
-      if (modalElement && window.bootstrap) {
-        const modalInstance =
-          window.bootstrap.Modal.getInstance(modalElement) ||
-          new window.bootstrap.Modal(modalElement);
-        modalInstance.hide();
-      }
+      // Close the modal avec nettoyage complet
+      setTimeout(() => {
+        const modalElement = document.getElementById("modalForm");
+        if (modalElement) {
+          try {
+            if (window.bootstrap) {
+              const modalInstance =
+                window.bootstrap.Modal.getInstance(modalElement);
+              if (modalInstance) {
+                modalInstance.hide();
+              }
+            }
+          } catch (modalError) {
+            console.log("Bootstrap modal error:", modalError);
+          }
+
+          // Force close et nettoyage complet
+          modalElement.classList.remove("show", "fade");
+          modalElement.style.display = "none";
+          modalElement.setAttribute("aria-hidden", "true");
+          modalElement.removeAttribute("aria-modal");
+
+          // Nettoyer le body
+          document.body.classList.remove("modal-open");
+          document.body.style.overflow = "";
+          document.body.style.paddingRight = "";
+
+          // Supprimer tous les backdrops
+          const backdrops = document.querySelectorAll(".modal-backdrop");
+          backdrops.forEach((backdrop) => {
+            backdrop.remove();
+          });
+        }
+      }, 100);
     } catch (error) {
       console.error("Error searching voyages: ", error);
     }
@@ -619,7 +676,13 @@ export default function Dashboard() {
                                       {v.agence_name}
                                     </h4>
                                     <p className="sub-text">
-                                      {v.date_voyage} - {v.libelle_bateau}
+                                      {v.date_voyage}
+                                      {v.trajet &&
+                                      v.trajet.length > 0 &&
+                                      v.trajet[0].heure_depart
+                                        ? ` à ${v.trajet[0].heure_depart}`
+                                        : ""}{" "}
+                                      - {v.libelle_bateau}
                                     </p>
                                   </div>
                                   <div className="card-text center">
@@ -706,7 +769,9 @@ export default function Dashboard() {
                     {/* Bloc des autres voyages */}
                     <div className="nk-block">
                       <div className="nk-block-head">
-                        <h5 className="nk-block-title">Futures voyages</h5>
+                        <h5 className="nk-block-title">
+                          {hasSearched ? "Autres voyages" : "Futures voyages"}
+                        </h5>
                       </div>
                       <div className="row g-gs">
                         {autresVoyages.length === 0 ? (
@@ -730,7 +795,13 @@ export default function Dashboard() {
                                       {v.agence_name}
                                     </h4>
                                     <p className="sub-text">
-                                      {v.date_voyage} - {v.libelle_bateau}
+                                      {v.date_voyage}
+                                      {v.trajet &&
+                                      v.trajet.length > 0 &&
+                                      v.trajet[0].heure_depart
+                                        ? ` à ${v.trajet[0].heure_depart}`
+                                        : ""}{" "}
+                                      - {v.libelle_bateau}
                                     </p>
                                   </div>
                                   <div className="card-text center">

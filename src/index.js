@@ -15,30 +15,36 @@ root.render(
   </React.StrictMode>
 );
 
-// Load external CSS and JS files in the public directory
-document.addEventListener("DOMContentLoaded", () => {
-  // Load CSS files
-  const loadCSS = (href) => {
-    const link = document.createElement("link");
-    link.href = `${process.env.PUBLIC_URL}${href}`;
-    link.rel = "stylesheet";
-    document.head.appendChild(link);
-  };
+// Load external CSS and JS files
+const loadCSS = (href) => {
+  const link = document.createElement("link");
+  link.href = href;
+  link.rel = "stylesheet";
+  link.onload = () => console.log(`CSS loaded: ${href}`);
+  link.onerror = () => console.warn(`CSS failed to load: ${href}`);
+  document.head.appendChild(link);
+};
 
-  // Load JS files
-  const loadJS = (src) => {
-    const script = document.createElement("script");
-    script.src = `${process.env.PUBLIC_URL}${src}`;
-    script.async = true;
-    document.body.appendChild(script);
-  };
+const loadJS = (src) => {
+  const script = document.createElement("script");
+  script.src = src;
+  script.async = true;
+  script.onload = () => console.log(`JS loaded: ${src}`);
+  script.onerror = () => console.warn(`JS failed to load: ${src}`);
+  document.body.appendChild(script);
+};
 
-  // Load the CSS and JS files
-  loadCSS("/assets/css/dashlite.css");
-  loadCSS("/assets/css/theme.css");
+// Load assets immediately
+loadCSS("/assets/css/dashlite.css");
+loadCSS("/assets/css/theme.css");
+
+// Load JS files
+try {
   loadJS("/assets/js/bundle.js");
   loadJS("/assets/js/scripts.js");
-});
+} catch (error) {
+  console.warn("External JS files not loaded:", error);
+}
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))

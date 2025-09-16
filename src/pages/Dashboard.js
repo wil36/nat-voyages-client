@@ -119,7 +119,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     const fetchVoyages = async () => {
-      if (!user) return;
+      // Temporaire : enlever la vérification user pour permettre l'accès sans authentification
+      // if (!user) return;
 
       try {
         // ✅ On utilise la collection 'users' maintenant
@@ -292,14 +293,14 @@ export default function Dashboard() {
     fetchLieux();
   }, []);
 
-  // if (loading)
-  //   return (
-  //     <div className="d-flex justify-content-center align-items-center vh-100">
-  //       <div className="spinner-grow text-primary" role="status">
-  //         <span className="sr-only">Loading...</span>
-  //       </div>
-  //     </div>
-  //   );
+  if (loading)
+    return (
+      <div className="d-flex justify-content-center align-items-center vh-100">
+        <div className="spinner-grow text-primary" role="status">
+          <span className="sr-only">Loading...</span>
+        </div>
+      </div>
+    );
 
   const handleRedirect = (voyage) => {
     try {

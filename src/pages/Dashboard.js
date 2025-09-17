@@ -183,6 +183,13 @@ export default function Dashboard() {
 
   const handleSearch = (e) => {
     e.preventDefault();
+    
+    // Vérifier que la date est obligatoire
+    if (!filters.date) {
+      alert("La date de voyage est obligatoire pour effectuer une recherche.");
+      return;
+    }
+    
     try {
       console.log("Début de la recherche avec filtres:", filters);
       console.log("Voyages originaux:", originalVoyages.length);
@@ -284,7 +291,14 @@ export default function Dashboard() {
           id: doc.id,
           ...doc.data(),
         }));
-        setLieux(lieuxList);
+        // Trier les lieux par ordre alphabétique
+        const lieuxTries = lieuxList.sort((a, b) => 
+          a.libelle_lieux.localeCompare(b.libelle_lieux, 'fr', { 
+            ignorePunctuation: true, 
+            numeric: true 
+          })
+        );
+        setLieux(lieuxTries);
       } catch (error) {
         console.error("Error fetching locations: ", error);
       }
@@ -544,7 +558,7 @@ export default function Dashboard() {
                                                 date: e.target.value,
                                               })
                                             }
-                                            required=""
+                                            required
                                           />
                                         </div>
                                       </div>

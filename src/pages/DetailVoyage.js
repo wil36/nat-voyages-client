@@ -13,6 +13,7 @@ import {
 } from "firebase/firestore";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import QRCode from "qrcode";
 import { db } from "../firebase";
 import NavBarComponent from "../components/NavBarComponent";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
@@ -49,111 +50,108 @@ export default function DetailVoyage() {
     navigate("/");
   };
 
-  // Fonction pour générer et télécharger la facture PDF
-  const genererFacturePDF = (venteId, donneesVente) => {
+  // Fonction pour générer et télécharger le reçu PDF
+  const genererFacturePDF = async (venteId, donneesVente) => {
     const doc = new jsPDF();
 
-    // Configuration de la police
-    doc.setFont("helvetica");
+    // Génération du QR code
+    const numeroReference = venteId.substring(0, 8).toUpperCase();
+    const qrData = `Réf: ${numeroReference} | Montant: ${donneesVente.montant_ttc}F | Client: ${donneesVente.prenoms} ${donneesVente.noms}`;
+    const qrDataUrl = await QRCode.toDataURL(qrData);
 
-    // En-tête de la facture
-    doc.setFontSize(20);
-    doc.setTextColor(0, 102, 204);
-    doc.text("FACTURE DE VOYAGE", 105, 30, { align: "center" });
+    // Titre principal
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text("NAT VOYAGES - TRANSPORT MARITIME", 20, 20);
 
-    // Informations de l'agence
-    doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
-    doc.text("NAT VOYAGES", 20, 50);
+    // Infos de l'entreprise
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
     doc.text(
       `Agence: ${donneesVente.agence_name || "Agence Principale"}`,
       20,
-      60
+      28
     );
-    doc.text("Tél: +225 XX XX XX XX", 20, 70);
+    doc.text("Tél: +225 XX XX XX XX", 20, 34);
+    doc.text("Email: contact@natvoyages.ci", 20, 40);
 
-    // Numéro de facture et date
-    const numeroFacture = `FACT-${venteId.substring(0, 8)}`;
-    const dateFacture = new Date().toLocaleDateString("fr-FR");
-    doc.text(`N° Facture: ${numeroFacture}`, 130, 50);
-    doc.text(`Date: ${dateFacture}`, 130, 60);
+    // Ligne séparatrice
+    doc.line(20, 45, 190, 45);
 
-    // Informations client
-    doc.setFontSize(14);
-    doc.text("INFORMATIONS CLIENT", 20, 90);
-    doc.setFontSize(11);
-    doc.text(`Nom: ${donneesVente.prenoms} ${donneesVente.noms}`, 20, 105);
-    doc.text(`Téléphone: ${donneesVente.tel}`, 20, 115);
-    doc.text(`Adresse: ${donneesVente.adresse}`, 20, 125);
-    doc.text(
-      `Pièce d'identité: ${donneesVente.type_piece} - ${donneesVente.numero}`,
-      20,
-      135
-    );
+    // Sous-titre
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("BILLET ELECTRONIQUE", 20, 55);
 
     // Détails du voyage
-    doc.setFontSize(14);
-    doc.text("DÉTAILS DU VOYAGE", 20, 155);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text("DETAILS DU VOYAGE", 20, 65);
 
-    // Tableau des détails
-    const tableData = [
-      ["Bateau", voyage?.libelle_bateau || "N/A"],
-      ["Date de voyage", voyage?.date_voyage || "N/A"],
-      ["Type de passager", donneesVente.type_passager],
-      ["Classe", donneesVente.classe],
-      [
-        "Trajets",
-        donneesVente.trajet
-          ?.map(
-            (t) =>
-              `${t.LieuDeDepartLibelle || t.lieu_depart} → ${
-                t.LieuDArriverLibelle || t.lieu_arrivee
-              }`
-          )
-          .join(", ") || "N/A",
-      ],
-    ];
+    // Extraire les villes de départ et d'arrivée
+    const premierTrajet = donneesVente.trajet?.[0];
+    const dernierTrajet = donneesVente.trajet?.[donneesVente.trajet.length - 1];
+    const villeDepart =
+      premierTrajet?.LieuDeDepartLibelle || premierTrajet?.lieu_depart || "N/A";
+    const villeArrivee =
+      dernierTrajet?.LieuDArriverLibelle ||
+      dernierTrajet?.lieu_arrivee ||
+      "N/A";
 
+    doc.text(`Ville de départ : ${villeDepart}`, 20, 72);
+    doc.text(`Ville d'arrivée : ${villeArrivee}`, 20, 78);
+    doc.text(`Date de voyage : ${voyage?.date_voyage || "N/A"}`, 20, 84);
+    doc.text("Franchise de bagage : 20kgs", 20, 90);
+
+    // Réservation
+    doc.setFont("helvetica", "bold");
+    doc.text("DETAILS DE LA RESERVATION", 20, 105);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Numéro de référence : ${numeroReference}`, 20, 112);
+    doc.text(
+      `Nom et prénom du passager : ${donneesVente.prenoms} ${donneesVente.noms}`,
+      20,
+      118
+    );
+    doc.text(`Tel : ${donneesVente.tel}`, 20, 124);
+    doc.text(`Type de passager : ${donneesVente.type_passager}`, 20, 130);
+    doc.text(`Classe : ${donneesVente.classe}`, 20, 136);
+    doc.text(
+      `Montant TTC : ${donneesVente.montant_ttc.toLocaleString()}F`,
+      20,
+      142
+    );
+    doc.text(`Encaissé par : Système NAT VOYAGES`, 20, 148);
+
+    // Informations additionnelles si bébé
     if (donneesVente.numero_billet_parent) {
-      tableData.push(["Ticket parent", donneesVente.numero_billet_parent]);
+      doc.text(`Ticket parent : ${donneesVente.numero_billet_parent}`, 20, 154);
     }
 
-    autoTable(doc, {
-      startY: 165,
-      head: [["Description", "Détails"]],
-      body: tableData,
-      theme: "grid",
-      headStyles: { fillColor: [0, 102, 204] },
-      margin: { left: 20, right: 20 },
-    });
+    // Infos additionnelles
+    doc.setFont("helvetica", "bold");
+    doc.text("INFORMATIONS ADDITIONNELLES", 20, 170);
+    doc.setFont("helvetica", "normal");
+    doc.text("Billet non remboursable valable 3 mois", 20, 177);
+    doc.text("Pénalité changement de date : à partir de 5000 FCFA", 20, 183);
+    doc.text("Pénalité départ manqué : 8000 FCFA", 20, 189);
+    doc.text("Pénalité autre modification : 5000 FCFA", 20, 195);
 
-    // Montant total
-    const finalY = doc.lastAutoTable.finalY + 20;
-    doc.setFontSize(16);
-    doc.setTextColor(0, 102, 204);
-    doc.text(
-      `MONTANT TOTAL: ${donneesVente.montant_ttc.toLocaleString()} FCFA`,
-      105,
-      finalY,
-      { align: "center" }
-    );
+    // Date et heure d'émission
+    const dateEmission = new Date().toLocaleString("fr-FR");
+    doc.setFontSize(8);
+    doc.text(`Émis le : ${dateEmission}`, 20, 210);
 
-    // Pied de page
-    doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text("Merci de votre confiance - NAT VOYAGES", 105, finalY + 30, {
-      align: "center",
-    });
-    doc.text(`Numéro de vente: ${venteId}`, 105, finalY + 40, {
-      align: "center",
-    });
+    // Insertion du QR code
+    doc.addImage(qrDataUrl, "PNG", 150, 60, 40, 40);
 
-    // Télécharger le PDF
-    doc.save(`Facture_${numeroFacture}_${donneesVente.noms}.pdf`);
+    // Sauvegarde du PDF
+    const nomFichier = `Recu_${numeroReference}_${donneesVente.noms}.pdf`;
+    doc.save(nomFichier);
 
     return {
-      numeroFacture,
-      dateFacture,
+      numeroFacture: numeroReference,
+      dateFacture: new Date().toLocaleDateString("fr-FR"),
       client: donneesVente.client_name,
       montant: donneesVente.montant_ttc,
     };
@@ -370,7 +368,7 @@ export default function DetailVoyage() {
           classe: ticketForm.classe || "",
           create_time: serverTimestamp(),
           statuts: "Payer",
-          voyage_reference: voyage?.id || id || "",
+          voyage_reference: voyageRef || "",
           trajet: (ticketForm.trajets_selectionnes || []).map((index) =>
             voyage?.trajet && voyage.trajet[index] ? voyage.trajet[index] : {}
           ),
@@ -386,18 +384,41 @@ export default function DetailVoyage() {
           agence_reference: voyage?.agence_reference || "",
           agence_name: voyage?.agence_name || "",
           type_passager: ticketForm.type_passager || "",
-          type_voyage: "aller_simple",
+          type_voyage: "Aller simple",
           createAt: serverTimestamp(),
         };
-        
-        // Nettoyer les valeurs undefined
-        Object.keys(nouvelleVente).forEach(key => {
-          if (nouvelleVente[key] === undefined) {
-            nouvelleVente[key] = "";
+
+        // Nettoyer les valeurs undefined et null de manière plus robuste
+        Object.keys(nouvelleVente).forEach((key) => {
+          if (nouvelleVente[key] === undefined || nouvelleVente[key] === null) {
+            if (key === "montant_ttc") {
+              nouvelleVente[key] = 0;
+            } else if (Array.isArray(nouvelleVente[key])) {
+              nouvelleVente[key] = [];
+            } else {
+              nouvelleVente[key] = "";
+            }
+          }
+          // Nettoyer les objets imbriqués dans trajet
+          if (key === "trajet" && Array.isArray(nouvelleVente[key])) {
+            nouvelleVente[key] = nouvelleVente[key].map((trajetItem) => {
+              const cleanedTrajet = {};
+              Object.keys(trajetItem).forEach((trajetKey) => {
+                if (
+                  trajetItem[trajetKey] === undefined ||
+                  trajetItem[trajetKey] === null
+                ) {
+                  cleanedTrajet[trajetKey] = "";
+                } else {
+                  cleanedTrajet[trajetKey] = trajetItem[trajetKey];
+                }
+              });
+              return cleanedTrajet;
+            });
           }
         });
 
-        const venteDocRef = doc(collection(db, "vente"));
+        const venteDocRef = doc(collection(db, "ventes"));
         transaction.set(venteDocRef, nouvelleVente);
         console.log("Vente enregistrée:", venteDocRef.id);
 
@@ -413,8 +434,22 @@ export default function DetailVoyage() {
           agenceReference: voyage?.agence_reference || "",
         };
 
+        // Nettoyer les données de transaction
+        Object.keys(transactionData).forEach((key) => {
+          if (
+            transactionData[key] === undefined ||
+            transactionData[key] === null
+          ) {
+            if (key === "montant_total" || key === "taxes") {
+              transactionData[key] = 0;
+            } else {
+              transactionData[key] = "";
+            }
+          }
+        });
+
         const transactionDocRef = doc(
-          collection(db, "vente", venteDocRef.id, "transaction_AVS-820V")
+          collection(db, "ventes", venteDocRef.id, "transactions_vente")
         );
         transaction.set(transactionDocRef, transactionData);
         console.log("Transaction créée");
@@ -423,7 +458,7 @@ export default function DetailVoyage() {
       });
 
       // 5. Générer et télécharger la facture PDF
-      const factureData = genererFacturePDF(
+      const factureData = await genererFacturePDF(
         result.venteId,
         result.nouvelleVente
       );
@@ -437,14 +472,64 @@ export default function DetailVoyage() {
         }\n\nLa facture a été téléchargée automatiquement.`
       );
 
-      // Fermer le modal après succès
+      // Fermer complètement le modal après succès
       const modalElement = document.getElementById("ticketModal");
       if (modalElement) {
-        modalElement.classList.remove("show");
-        modalElement.style.display = "none";
-        document.body.classList.remove("modal-open");
-        const backdrop = document.querySelector(".modal-backdrop");
-        if (backdrop) backdrop.remove();
+        try {
+          // Essayer la méthode jQuery (Bootstrap 4/5 avec jQuery)
+          if (window.$ && window.$.fn.modal) {
+            window.$("#ticketModal").modal("hide");
+          }
+          // Sinon essayer la méthode Bootstrap native
+          else if (
+            window.bootstrap &&
+            window.bootstrap.Modal &&
+            window.bootstrap.Modal.getInstance
+          ) {
+            const modal = window.bootstrap.Modal.getInstance(modalElement);
+            if (modal) {
+              modal.hide();
+            }
+          }
+        } catch (e) {
+          console.warn("Erreur lors de la fermeture du modal:", e);
+        }
+
+        // Nettoyage manuel complet (toujours exécuté pour garantir la fermeture)
+        setTimeout(() => {
+          modalElement.classList.remove("show", "fade");
+          modalElement.style.display = "none";
+          modalElement.setAttribute("aria-hidden", "true");
+          modalElement.removeAttribute("aria-modal");
+          modalElement.removeAttribute("role");
+
+          // Supprimer toutes les classes modal du body
+          document.body.classList.remove("modal-open");
+          document.body.style.overflow = "";
+          document.body.style.paddingRight = "";
+
+          // Supprimer tous les backdrops
+          const backdrops = document.querySelectorAll(".modal-backdrop");
+          backdrops.forEach((backdrop) => backdrop.remove());
+        }, 100);
+
+        // Reset du formulaire
+        setTicketForm({
+          type_voyage: "aller_simple",
+          type_passager: "Adulte",
+          classe: "Economie",
+          type_piece: "Carte d'identité",
+          numero_piece: "",
+          nom: "",
+          prenom: "",
+          sexe: "Masculin",
+          telephone: "",
+          adresse: "",
+          trajets_selectionnes: [],
+          numero_billet_parent: "",
+        });
+
+        setErrors({});
       }
     } catch (error) {
       console.error("Erreur lors de l'enregistrement:", error);

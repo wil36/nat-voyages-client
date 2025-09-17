@@ -2,11 +2,8 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext"; // ✅ Le provider
-import LoginPage from "./pages/LoginPage";
 import Dashboard from "./pages/Dashboard";
 import DetailVoyage from "./pages/DetailVoyage";
-import ProfilUser from "./pages/ProfilUser";
-import SignupPage from "./pages/SignupPage";
 
 function App() {
   return (

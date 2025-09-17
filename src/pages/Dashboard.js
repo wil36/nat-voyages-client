@@ -149,7 +149,16 @@ export default function Dashboard() {
             referenceDoc: doc.ref.path,
             libelle_bateau: data.libelle_bateau || "Inconnu",
             bateau_reference: data.bateau_reference || "",
-            date_voyage: data.date_voyage?.toDate().toLocaleDateString() || "",
+            date_voyage: data.date_voyage
+              ? `${data.date_voyage
+                  .toDate()
+                  .toLocaleDateString()} ${data.date_voyage
+                  .toDate()
+                  .toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}`
+              : "",
             statut: data.status,
             montant: data.montant_ttc || 0,
             agence_name: data.agence_name || "",
@@ -183,13 +192,13 @@ export default function Dashboard() {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    
+
     // Vérifier que la date est obligatoire
     if (!filters.date) {
       alert("La date de voyage est obligatoire pour effectuer une recherche.");
       return;
     }
-    
+
     try {
       console.log("Début de la recherche avec filtres:", filters);
       console.log("Voyages originaux:", originalVoyages.length);
@@ -292,10 +301,10 @@ export default function Dashboard() {
           ...doc.data(),
         }));
         // Trier les lieux par ordre alphabétique
-        const lieuxTries = lieuxList.sort((a, b) => 
-          a.libelle_lieux.localeCompare(b.libelle_lieux, 'fr', { 
-            ignorePunctuation: true, 
-            numeric: true 
+        const lieuxTries = lieuxList.sort((a, b) =>
+          a.libelle_lieux.localeCompare(b.libelle_lieux, "fr", {
+            ignorePunctuation: true,
+            numeric: true,
           })
         );
         setLieux(lieuxTries);

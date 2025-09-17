@@ -287,14 +287,14 @@ export default function DetailVoyage() {
 
     // Validation avant soumission
     if (!validateForm()) {
-      alert("Veuillez corriger les erreurs dans le formulaire");
+      // alert("Veuillez corriger les erreurs dans le formulaire");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      console.log("Début de l'enregistrement du billet...");
+      // console.log("Début de l'enregistrement du billet...");
 
       // Vérifier la disponibilité des places en temps réel
       const voyageActuel = await verifierDisponibilite();
@@ -315,7 +315,7 @@ export default function DetailVoyage() {
         transaction.update(voyageRef, {
           [placeField]: currentPlaces + 1,
         });
-        console.log("Places mises à jour dans le voyage");
+        // console.log("Places mises à jour dans le voyage");
 
         // 2. Vérifier/créer le client dans la collection clients
         let clientReference = null;
@@ -331,7 +331,7 @@ export default function DetailVoyage() {
           // Client existe déjà
           const clientDoc = clientsSnapshot.docs[0];
           clientReference = clientDoc.id;
-          console.log("Client existant trouvé:", clientReference);
+          // console.log("Client existant trouvé:", clientReference);
         } else {
           // Créer nouveau client
           const nouveauClient = {
@@ -349,7 +349,7 @@ export default function DetailVoyage() {
           const clientDocRef = doc(collection(db, "clients"));
           transaction.set(clientDocRef, nouveauClient);
           clientReference = clientDocRef.id;
-          console.log("Nouveau client créé:", clientReference);
+          // console.log("Nouveau client créé:", clientReference);
         }
 
         // 3. Enregistrer la vente dans la collection vente
@@ -420,7 +420,7 @@ export default function DetailVoyage() {
 
         const venteDocRef = doc(collection(db, "ventes"));
         transaction.set(venteDocRef, nouvelleVente);
-        console.log("Vente enregistrée:", venteDocRef.id);
+        // console.log("Vente enregistrée:", venteDocRef.id);
 
         // 4. Créer la sous-collection transaction AVS-820V
         const transactionData = {
@@ -452,7 +452,7 @@ export default function DetailVoyage() {
           collection(db, "ventes", venteDocRef.id, "transactions_vente")
         );
         transaction.set(transactionDocRef, transactionData);
-        console.log("Transaction créée");
+        // console.log("Transaction créée");
 
         return { venteId: venteDocRef.id, nouvelleVente };
       });
@@ -462,15 +462,15 @@ export default function DetailVoyage() {
         result.venteId,
         result.nouvelleVente
       );
-      console.log("Facture générée et téléchargée:", factureData);
+      //// console.log("Facture générée et téléchargée:", factureData);
 
-      alert(
-        `Billet réservé avec succès pour un montant de ${montantTotal.toLocaleString()} FCFA\nNuméro de vente: ${
-          result.venteId
-        }\nFacture: ${
-          factureData.numeroFacture
-        }\n\nLa facture a été téléchargée automatiquement.`
-      );
+      // alert(
+      //   `Billet réservé avec succès pour un montant de ${montantTotal.toLocaleString()} FCFA\nNuméro de vente: ${
+      //     result.venteId
+      //   }\nFacture: ${
+      //     factureData.numeroFacture
+      //   }\n\nLa facture a été téléchargée automatiquement.`
+      // );
 
       // Fermer complètement le modal après succès
       const modalElement = document.getElementById("ticketModal");
@@ -533,7 +533,7 @@ export default function DetailVoyage() {
       }
     } catch (error) {
       console.error("Erreur lors de l'enregistrement:", error);
-      alert(`Erreur lors de l'enregistrement du billet: ${error.message}`);
+      // alert(`Erreur lors de l'enregistrement du billet: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -553,11 +553,11 @@ export default function DetailVoyage() {
           if (docSnap.exists()) {
             setVoyage(docSnap.data());
           } else {
-            console.log("No such document!");
+            // console.log("No such document!");
           }
           setLoading(false);
         } catch (error) {
-          console.log("Error fetching voyage: ", error);
+          // console.log("Error fetching voyage: ", error);
           setLoading(false);
         }
       };
@@ -607,7 +607,7 @@ export default function DetailVoyage() {
                                 </span>
                               </li>
                               <li>
-                                Date:{" "}
+                                Date et heure:{" "}
                                 <span className="text-base">
                                   {voyage?.date_voyage}
                                 </span>
@@ -681,10 +681,12 @@ export default function DetailVoyage() {
                                   <div className="profile-ud-item">
                                     <div className="profile-ud wider">
                                       <span className="profile-ud-label">
-                                        Date du voyage
+                                        Date et heure du voyage
                                       </span>
                                       <span className="profile-ud-value">
                                         {voyage?.date_voyage}
+                                        {voyage?.trajet?.[0]?.heure_depart &&
+                                          ` à ${voyage.trajet[0].heure_depart}`}
                                       </span>
                                     </div>
                                   </div>
@@ -1309,18 +1311,9 @@ export default function DetailVoyage() {
                       isSubmitting
                     }
                   >
-                    {isSubmitting ? (
-                      <>
-                        <span
-                          className="spinner-border spinner-border-sm mr-2"
-                          role="status"
-                          aria-hidden="true"
-                        ></span>
-                        Enregistrement en cours...
-                      </>
-                    ) : (
-                      "Réserver le billet"
-                    )}
+                    {isSubmitting
+                      ? "Enregistrement en cours..."
+                      : "Réserver le billet"}
                   </button>
                 </div>
               </form>

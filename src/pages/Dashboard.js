@@ -371,7 +371,7 @@ export default function Dashboard() {
           <div className="nk-wrap ">
             <NavBarComponent />
             {/* content @s */}
-            <div className="nk-content ">
+            <div className="nk-content" style={{paddingBottom: '80px'}}>
               <div className="container">
                 <div className="nk-content-inner">
                   <div className="nk-content-body">

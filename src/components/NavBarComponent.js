@@ -1,11 +1,14 @@
 import { useAuth } from "../contexts/AuthContext";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
+import { useState } from "react";
 
 export default function NavBarComponent() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { currentUser } = useAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
     signOut(auth)
@@ -21,12 +24,35 @@ export default function NavBarComponent() {
     navigate("/profil-user");
   };
 
+  const getNavLinkStyle = (path) => {
+    const isActive = location.pathname === path;
+    return {
+      textDecoration: "none",
+      color: isActive ? "#6576ff" : "inherit",
+      padding: "8px 12px",
+      fontSize: "14px",
+      whiteSpace: "nowrap",
+    };
+  };
+
   return (
-    <div className="nk-header nk-header-fixed is-light">
+    <div
+      className="nk-header nk-header-fixed is-light"
+      style={{ position: "relative" }}
+    >
       <div className="container">
-        <div className="nk-header-wrap">
-          <div className="nk-header-brand ">
-            <a href="html/index.html" className="logo-link">
+        <div
+          className="nk-header-wrap"
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            minHeight: "60px",
+          }}
+        >
+          <div className="nk-header-brand">
+            <Link to="/" className="logo-link">
               <img
                 className="logo-light logo-img"
                 src={`${process.env.PUBLIC_URL}/assets/images/logo.png`}
@@ -37,10 +63,156 @@ export default function NavBarComponent() {
                 src={`${process.env.PUBLIC_URL}/assets/images/logo-dark.png`}
                 alt="logo-dark"
               />
-            </a>
+            </Link>
           </div>
 
-          {/* <div className="nk-header-tools">
+          {/* Menu desktop */}
+          <div className="nk-header-menu ml-auto d-none d-md-block">
+            <ul
+              className="nk-menu nk-menu-main"
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+                gap: "10px",
+                margin: 0,
+                padding: 0,
+                listStyle: "none",
+                flexWrap: "wrap",
+              }}
+            >
+              <li className="nk-menu-item">
+                <Link
+                  to="/"
+                  className="nk-menu-link"
+                  style={getNavLinkStyle("/")}
+                >
+                  <span className="nk-menu-text">Accueil</span>
+                </Link>
+              </li>
+              <li className="nk-menu-item">
+                <Link
+                  to="/conditions"
+                  className="nk-menu-link"
+                  style={getNavLinkStyle("/conditions")}
+                >
+                  <span className="nk-menu-text">Conditions</span>
+                </Link>
+              </li>
+              <li className="nk-menu-item">
+                <Link
+                  to="/aide"
+                  className="nk-menu-link"
+                  style={getNavLinkStyle("/aide")}
+                >
+                  <span className="nk-menu-text">Aide</span>
+                </Link>
+              </li>
+              <li className="nk-menu-item">
+                <Link
+                  to="/contact"
+                  className="nk-menu-link"
+                  style={getNavLinkStyle("/contact")}
+                >
+                  <span className="nk-menu-text">Contact</span>
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Bouton menu mobile */}
+          <div className="nk-header-toggle d-md-none">
+            <button
+              className="btn btn-icon btn-trigger"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              style={{ border: "none", background: "transparent" }}
+            >
+              <em
+                className={`icon ni ${
+                  isMobileMenuOpen ? "ni-cross" : "ni-menu"
+                }`}
+              ></em>
+            </button>
+          </div>
+        </div>
+
+        {/* Menu mobile dropdown */}
+        {isMobileMenuOpen && (
+          <div
+            className="nk-header-mobile-menu d-md-none"
+            style={{
+              position: "absolute",
+              top: "100%",
+              left: 0,
+              right: 0,
+              backgroundColor: "#fff",
+              borderTop: "1px solid #e5e9f2",
+              zIndex: 999,
+              padding: "20px",
+            }}
+          >
+            <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
+              <li style={{ marginBottom: "10px" }}>
+                <Link
+                  to="/"
+                  className="nk-menu-link"
+                  style={{
+                    ...getNavLinkStyle("/"),
+                    display: "block",
+                    padding: "15px",
+                  }}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <span className="nk-menu-text">Accueil</span>
+                </Link>
+              </li>
+              <li style={{ marginBottom: "10px" }}>
+                <Link
+                  to="/conditions"
+                  className="nk-menu-link"
+                  style={{
+                    ...getNavLinkStyle("/conditions"),
+                    display: "block",
+                    padding: "15px",
+                  }}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <span className="nk-menu-text">Conditions</span>
+                </Link>
+              </li>
+              <li style={{ marginBottom: "10px" }}>
+                <Link
+                  to="/aide"
+                  className="nk-menu-link"
+                  style={{
+                    ...getNavLinkStyle("/aide"),
+                    display: "block",
+                    padding: "15px",
+                  }}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <span className="nk-menu-text">Aide</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/contact"
+                  className="nk-menu-link"
+                  style={{
+                    ...getNavLinkStyle("/contact"),
+                    display: "block",
+                    padding: "15px",
+                  }}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <span className="nk-menu-text">Contact</span>
+                </Link>
+              </li>
+            </ul>
+          </div>
+        )}
+
+        {/* <div className="nk-header-tools">
             <ul className="nk-quick-nav">
               <li className="dropdown user-dropdown">
                 <a
@@ -98,7 +270,6 @@ export default function NavBarComponent() {
               </li>
             </ul>
           </div> */}
-        </div>
       </div>
     </div>
 

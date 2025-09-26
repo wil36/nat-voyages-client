@@ -370,12 +370,222 @@ export default function Dashboard() {
           {/* wrap @s */}
           <div className="nk-wrap ">
             <NavBarComponent />
+
+            {/* Hero Section @s */}
+            <div
+              className="hero-section"
+              style={{
+                backgroundImage:
+                  'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url("https://images.unsplash.com/photo-1488646953014-85cb44e25828?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80")',
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                minHeight: "500px",
+                display: "flex",
+                alignItems: "center",
+                color: "white",
+              }}
+            >
+              <div className="container">
+                <div className="row justify-content-center">
+                  <div className="col-lg-8 text-center">
+                    <h1
+                      className="hero-title"
+                      style={{
+                        fontSize: "3rem",
+                        fontWeight: "bold",
+                        marginBottom: "1rem",
+                        color: "white",
+                      }}
+                    >
+                      Découvrez vos prochaines aventures
+                    </h1>
+                    <p
+                      className="hero-subtitle"
+                      style={{
+                        fontSize: "1.2rem",
+                        marginBottom: "2rem",
+                        opacity: 0.9,
+                      }}
+                    >
+                      Trouvez le voyage parfait parmi notre sélection de
+                      destinations exceptionnelles
+                    </p>
+
+                    {/* Search Form */}
+                    <div
+                      className="search-card mb-5"
+                      style={{
+                        backgroundColor: "rgba(255,255,255,0.95)",
+                        borderRadius: "15px",
+                        padding: "30px",
+                        boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
+                        color: "#333",
+                      }}
+                    >
+                      <div className="row g-3 align-items-end justify-content-center">
+                        <div className="col-md-3">
+                          <div className="form-group">
+                            <label
+                              className="form-label"
+                              style={{
+                                fontWeight: "600",
+                                color: "#666",
+                                textAlign: "left",
+                                display: "block",
+                              }}
+                            >
+                              Départ
+                            </label>
+                            <div className="form-control-wrap">
+                              <select
+                                className="form-control form-select"
+                                value={filters.depart}
+                                onChange={(e) =>
+                                  setFilters({
+                                    ...filters,
+                                    depart: e.target.value,
+                                  })
+                                }
+                                style={{ paddingRight: "30px", height: "46px" }}
+                              >
+                                <option value="">Toutes les villes</option>
+                                {lieux.map((lieu) => (
+                                  <option
+                                    key={`hero-depart-${lieu.id}`}
+                                    value={lieu.id}
+                                  >
+                                    {lieu.libelle_lieux}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="col-md-3">
+                          <div className="form-group">
+                            <label
+                              className="form-label"
+                              style={{
+                                fontWeight: "600",
+                                color: "#666",
+                                textAlign: "left",
+                                display: "block",
+                              }}
+                            >
+                              Arrivée
+                            </label>
+                            <div className="form-control-wrap">
+                              <select
+                                className="form-control form-select"
+                                value={filters.arrivee}
+                                onChange={(e) =>
+                                  setFilters({
+                                    ...filters,
+                                    arrivee: e.target.value,
+                                  })
+                                }
+                                style={{ paddingRight: "30px", height: "46px" }}
+                              >
+                                <option value="">Toutes les villes</option>
+                                {lieux.map((lieu) => (
+                                  <option
+                                    key={`hero-arrivee-${lieu.id}`}
+                                    value={lieu.id}
+                                  >
+                                    {lieu.libelle_lieux}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="col-md-3">
+                          <div className="form-group">
+                            <label
+                              className="form-label"
+                              style={{
+                                fontWeight: "600",
+                                color: "#666",
+                                textAlign: "left",
+                                display: "block",
+                              }}
+                            >
+                              Date
+                            </label>
+                            <div className="form-control-wrap">
+                              <input
+                                type="date"
+                                className="form-control"
+                                value={filters.date}
+                                onChange={(e) =>
+                                  setFilters({
+                                    ...filters,
+                                    date: e.target.value,
+                                  })
+                                }
+                                style={{ height: "46px" }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="col-md-2">
+                          <div className="form-group d-flex ">
+                            {/* <button
+                              className="btn btn-primary"
+                              onClick={handleSearch}
+                              style={{ flex: 1 }}
+                            >
+                              <em className="icon ni ni-search"></em>
+                              <span>Rechercher</span>
+                            </button>
+                            <button
+                              className="btn btn-outline-light"
+                              onClick={() => {
+                                setFilters({
+                                  depart: "",
+                                  arrivee: "",
+                                  date: "",
+                                });
+                                setHasSearched(false);
+                                setVoyagesDuJour(originalVoyages.slice(0, 6));
+                                setAutresVoyages(originalVoyages.slice(6));
+                              }}
+                              style={{ minWidth: "45px" }}
+                            >
+                              <em className="icon ni ni-reload"></em>
+                            </button> */}
+                            <button
+                              className="ml-1 btn btn-icon btn-lg btn-outline-primary"
+                              type="button"
+                              onClick={handleSearch}
+                            >
+                              <em className="icon ni ni-search"></em>
+                            </button>
+                            {hasSearched && (
+                              <button
+                                type="button"
+                                className="ml-1 btn btn-icon btn-lg btn-outline-primary"
+                                onClick={resetVoyages}
+                              >
+                                <em className="icon ni ni-reload"></em>{" "}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {/* Hero Section @e */}
+
             {/* content @s */}
-            <div className="nk-content" style={{paddingBottom: '80px'}}>
+            <div className="nk-content" style={{ paddingBottom: "80px" }}>
               <div className="container">
                 <div className="nk-content-inner">
                   <div className="nk-content-body">
-                    <div className="nk-block-head nk-block-head-sm">
+                    {/* <div className="nk-block-head nk-block-head-sm">
                       <div className="nk-block-between g-3">
                         <div className="nk-block-head-content">
                           <h3 className="nk-block-title page-title">
@@ -525,7 +735,7 @@ export default function Dashboard() {
                                   Save Filter
                                 </a>
                               </div>
-                            </div> */}
+                            </div> }
                             <div className="modal fade" id="modalForm">
                               <div className="modal-dialog" role="document">
                                 <div className="modal-content">
@@ -654,12 +864,10 @@ export default function Dashboard() {
                               </div>
                             </div>
 
-                            {/* .filter-wg */}
                           </div>
-                          {/* .dropdown */}
                         </div>
                       </div>
-                    </div>
+                    </div> */}
                     {/* .nk-block-head */}
 
                     {/* Bloc des voyages du jour */}

@@ -51,8 +51,8 @@ export default function DetailVoyage() {
   };
 
   // Fonction pour générer et télécharger le reçu PDF
-  const genererFacturePDF = async (venteId, donneesVente) => {
-    const doc = new jsPDF();
+  const genererFacturePDF = async (venteId, donneesVente, previewOnly = false) => {
+    const doc = new jsPDF("landscape"); // Mode paysage
 
     // Génération du QR code
     const numeroReference = venteId.substring(0, 8).toUpperCase();
@@ -137,17 +137,35 @@ export default function DetailVoyage() {
     doc.text("Pénalité départ manqué : 8000 FCFA", 20, 189);
     doc.text("Pénalité autre modification : 5000 FCFA", 20, 195);
 
-    // Date et heure d'émission
+    // Insertion du QR code (ajusté pour paysage)
+    doc.addImage(qrDataUrl, "PNG", 220, 60, 40, 40);
+
+    // Date et heure d'émission + Bon voyage en bas à droite
     const dateEmission = new Date().toLocaleString("fr-FR");
     doc.setFontSize(8);
-    doc.text(`Émis le : ${dateEmission}`, 20, 210);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Émis le : ${dateEmission}`, 220, 185);
+    
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text("Bon voyage !", 235, 195);
 
-    // Insertion du QR code
-    doc.addImage(qrDataUrl, "PNG", 150, 60, 40, 40);
-
-    // Sauvegarde du PDF
+    // Prévisualisation ou téléchargement
     const nomFichier = `Recu_${numeroReference}_${donneesVente.noms}.pdf`;
-    doc.save(nomFichier);
+    
+    if (previewOnly) {
+      // Ouvrir une nouvelle fenêtre avec prévisualisation
+      const pdfBlob = doc.output('blob');
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      const previewWindow = window.open(pdfUrl, '_blank');
+      previewWindow.onload = () => {
+        URL.revokeObjectURL(pdfUrl);
+      };
+      return { numeroFacture: numeroReference, dateFacture: new Date().toLocaleDateString("fr-FR") };
+    } else {
+      // Télécharger le PDF
+      doc.save(nomFichier);
+    }
 
     return {
       numeroFacture: numeroReference,
@@ -457,11 +475,18 @@ export default function DetailVoyage() {
         return { venteId: venteDocRef.id, nouvelleVente };
       });
 
-      // 5. Générer et télécharger la facture PDF
-      const factureData = await genererFacturePDF(
-        result.venteId,
-        result.nouvelleVente
-      );
+      // 5. Générer prévisualisation ET télécharger la facture PDF
+      // D'abord prévisualisation
+      await genererFacturePDF(result.venteId, result.nouvelleVente, true);
+      
+      // Puis téléchargement automatique après un petit délai
+      setTimeout(async () => {
+        const factureData = await genererFacturePDF(
+          result.venteId,
+          result.nouvelleVente,
+          false
+        );
+      }, 500);
       //// console.log("Facture générée et téléchargée:", factureData);
 
       // alert(

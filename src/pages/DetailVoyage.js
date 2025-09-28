@@ -26,20 +26,24 @@ export default function DetailVoyage() {
   const location = useLocation();
   const { id } = useParams();
 
-  // État pour le formulaire de billet
-  const [ticketForm, setTicketForm] = useState({
+  // État pour le formulaire de billet avec plusieurs passagers
+  const [reservationForm, setReservationForm] = useState({
     type_voyage: "aller_simple", // aller_simple ou aller_retour
-    type_passager: "Adulte", // adulte, enfant, bebe
-    classe: "Economie", // economique ou vip
-    type_piece: "Carte d'identité ", // cni, passeport, permis
-    numero_piece: "",
-    nom: "",
-    prenom: "",
-    sexe: "Masculin", // Masculin ou Feminin
-    telephone: "",
-    adresse: "",
-    trajets_selectionnes: [], // tableau des indices des trajets sélectionnés
-    numero_billet_parent: "", // pour les bébés
+    trajets_selectionnes: [], // tableau des indices des trajets sélectionnés - commun à tous
+    passagers: [
+      {
+        id: 1,
+        type_passager: "Adulte", // Adulte, Enfant, Bébé
+        classe: "Economie", // Economie ou VIP
+        type_piece: "Carte d'identité", // cni, passeport, permis
+        numero_piece: "",
+        nom: "",
+        prenom: "",
+        sexe: "Masculin", // Masculin ou Féminin
+        telephone: "",
+        adresse: "",
+      },
+    ],
   });
 
   const [montantTotal, setMontantTotal] = useState(0);
@@ -50,8 +54,64 @@ export default function DetailVoyage() {
     navigate("/");
   };
 
+  // Fonctions de gestion des passagers
+  const ajouterPassager = () => {
+    const nouveauPassager = {
+      id: Date.now(),
+      type_passager: "Adulte",
+      classe: "Economie",
+      type_piece: "Carte d'identité",
+      numero_piece: "",
+      nom: "",
+      prenom: "",
+      sexe: "Masculin",
+      telephone: "",
+      adresse: "",
+    };
+
+    setReservationForm((prev) => ({
+      ...prev,
+      passagers: [...prev.passagers, nouveauPassager],
+    }));
+  };
+
+  const supprimerPassager = (passagerId) => {
+    if (reservationForm.passagers.length > 1) {
+      setReservationForm((prev) => ({
+        ...prev,
+        passagers: prev.passagers.filter((p) => p.id !== passagerId),
+      }));
+    }
+  };
+
+  const mettreAJourPassager = (passagerId, field, value) => {
+    setReservationForm((prev) => ({
+      ...prev,
+      passagers: prev.passagers.map((passager) =>
+        passager.id === passagerId ? { ...passager, [field]: value } : passager
+      ),
+    }));
+  };
+
+  const mettreAJourTrajets = (trajetIndex, isSelected) => {
+    setReservationForm((prev) => {
+      const newTrajets = isSelected
+        ? [...prev.trajets_selectionnes, trajetIndex]
+        : prev.trajets_selectionnes.filter((index) => index !== trajetIndex);
+
+      return {
+        ...prev,
+        trajets_selectionnes: newTrajets,
+      };
+    });
+  };
+
   // Fonction pour générer et télécharger le reçu PDF
-  const genererFacturePDF = async (venteId, donneesVente, previewOnly = false) => {
+  const genererFacturePDF = async (
+    venteId,
+    donneesVente,
+    previewOnly = false
+  ) => {
     const doc = new jsPDF("landscape"); // Mode paysage
 
     // Génération du QR code
@@ -145,23 +205,26 @@ export default function DetailVoyage() {
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
     doc.text(`Émis le : ${dateEmission}`, 220, 185);
-    
+
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
-    doc.text("Bon voyage !", 235, 195);
+    doc.text("Bon voyage et à bientôt !", 235, 195);
 
     // Prévisualisation ou téléchargement
     const nomFichier = `Recu_${numeroReference}_${donneesVente.noms}.pdf`;
-    
+
     if (previewOnly) {
       // Ouvrir une nouvelle fenêtre avec prévisualisation
-      const pdfBlob = doc.output('blob');
+      const pdfBlob = doc.output("blob");
       const pdfUrl = URL.createObjectURL(pdfBlob);
-      const previewWindow = window.open(pdfUrl, '_blank');
+      const previewWindow = window.open(pdfUrl, "_blank");
       previewWindow.onload = () => {
         URL.revokeObjectURL(pdfUrl);
       };
-      return { numeroFacture: numeroReference, dateFacture: new Date().toLocaleDateString("fr-FR") };
+      return {
+        numeroFacture: numeroReference,
+        dateFacture: new Date().toLocaleDateString("fr-FR"),
+      };
     } else {
       // Télécharger le PDF
       doc.save(nomFichier);
@@ -175,74 +238,195 @@ export default function DetailVoyage() {
     };
   };
 
-  // Fonction de validation des champs obligatoires
+  // Fonction pour générer un PDF multi-pages (une page par passager)
+  const genererFactureMultiPassagers = async (ventes) => {
+    const doc = new jsPDF("landscape");
+
+    for (let i = 0; i < ventes.length; i++) {
+      const vente = ventes[i];
+
+      // Ajouter une nouvelle page pour chaque passager (sauf le premier)
+      if (i > 0) {
+        doc.addPage();
+      }
+
+      // Génération du QR code pour ce passager
+      const numeroReference =
+        vente.numero_billet || vente.id.substring(0, 8).toUpperCase();
+      const qrData = `Réf: ${numeroReference} | Montant: ${vente.montant_ttc}F | Client: ${vente.prenoms} ${vente.noms}`;
+      const qrDataUrl = await QRCode.toDataURL(qrData);
+
+      // Titre principal
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.text("NAT VOYAGES - TRANSPORT MARITIME", 20, 20);
+
+      // Infos de l'entreprise
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Agence: ${vente.agence_name || "Agence Principale"}`, 20, 28);
+      doc.text("Tél: +225 XX XX XX XX", 20, 34);
+      doc.text("Email: contact@natvoyages.ci", 20, 40);
+
+      // Ligne séparatrice
+      doc.line(20, 45, 190, 45);
+
+      // Sous-titre avec numéro de passager
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text(
+        `BILLET ELECTRONIQUE - Passager ${i + 1}/${ventes.length}`,
+        20,
+        55
+      );
+
+      // Détails du voyage
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.text("DETAILS DU VOYAGE", 20, 65);
+
+      // Extraire les villes de départ et d'arrivée
+      const premierTrajet = vente.trajet?.[0] || voyage?.trajet?.[0];
+      const dernierTrajet =
+        vente.trajet?.[vente.trajet?.length - 1] ||
+        voyage?.trajet?.[voyage?.trajet?.length - 1];
+      const villeDepart =
+        premierTrajet?.LieuDeDepartLibelle ||
+        premierTrajet?.lieu_depart ||
+        "N/A";
+      const villeArrivee =
+        dernierTrajet?.LieuDArriverLibelle ||
+        dernierTrajet?.lieu_arrivee ||
+        "N/A";
+
+      doc.text(`Ville de départ : ${villeDepart}`, 20, 72);
+      doc.text(`Ville d'arrivée : ${villeArrivee}`, 20, 78);
+      doc.text(`Date de voyage : ${voyage?.date_voyage || "N/A"}`, 20, 84);
+      doc.text("Franchise de bagage : 20kgs", 20, 90);
+
+      // Réservation
+      doc.setFont("helvetica", "bold");
+      doc.text("DETAILS DE LA RESERVATION", 20, 105);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Numéro de référence : ${numeroReference}`, 20, 112);
+      doc.text(
+        `Nom et prénom du passager : ${vente.prenoms} ${vente.noms}`,
+        20,
+        118
+      );
+      doc.text(`Tel : ${vente.tel}`, 20, 124);
+      doc.text(`Type de passager : ${vente.type_passager}`, 20, 130);
+      doc.text(`Classe : ${vente.classe}`, 20, 136);
+      doc.text(`Montant TTC : ${vente.montant_ttc.toLocaleString()}F`, 20, 142);
+      doc.text(`Encaissé par : Système NAT VOYAGES`, 20, 148);
+
+      // Informations additionnelles si bébé
+      if (vente.numero_billet_parent) {
+        doc.text(`Ticket parent : ${vente.numero_billet_parent}`, 20, 154);
+      }
+
+      // Infos additionnelles
+      doc.setFont("helvetica", "bold");
+      doc.text("INFORMATIONS ADDITIONNELLES", 20, 170);
+      doc.setFont("helvetica", "normal");
+      doc.text("Billet non remboursable valable 3 mois", 20, 177);
+      doc.text("Pénalité changement de date : à partir de 5000 FCFA", 20, 183);
+      doc.text("Pénalité départ manqué : 8000 FCFA", 20, 189);
+      doc.text("Pénalité autre modification : 5000 FCFA", 20, 195);
+
+      // Insertion du QR code
+      doc.addImage(qrDataUrl, "PNG", 220, 60, 40, 40);
+
+      // Date et heure d'émission + Bon voyage
+      const dateEmission = new Date().toLocaleString("fr-FR");
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Émis le : ${dateEmission}`, 220, 185);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text("Bon voyage et à bientôt !", 235, 195);
+    }
+
+    // Télécharger le PDF
+    const dateStr = new Date().toISOString().split("T")[0];
+    const nomFichier = `Billets_${dateStr}_${ventes.length}passagers.pdf`;
+    doc.save(nomFichier);
+
+    return true;
+  };
+
+  // Fonction de validation des champs obligatoires pour plusieurs passagers
   const validateForm = () => {
     const newErrors = {};
 
-    // Vérification des champs obligatoires
-    if (!ticketForm.nom.trim()) {
-      newErrors.nom = "Le nom est obligatoire";
-    }
-    if (!ticketForm.prenom.trim()) {
-      newErrors.prenom = "Le prénom est obligatoire";
-    }
-    if (!ticketForm.numero_piece.trim()) {
-      newErrors.numero_piece = "Le numéro de pièce d'identité est obligatoire";
-    }
-    if (!ticketForm.telephone.trim()) {
-      newErrors.telephone = "Le numéro de téléphone est obligatoire";
-    }
-    if (!ticketForm.adresse.trim()) {
-      newErrors.adresse = "L'adresse est obligatoire";
-    }
-    if (ticketForm.trajets_selectionnes.length === 0) {
+    // Vérifier la sélection des trajets (commun à tous)
+    if (reservationForm.trajets_selectionnes.length === 0) {
       newErrors.trajets = "Vous devez sélectionner au moins un trajet";
     }
-    if (
-      ticketForm.type_passager === "Bébé" &&
-      !ticketForm.numero_billet_parent.trim()
-    ) {
-      newErrors.numero_billet_parent =
-        "Le numéro de billet du parent est obligatoire pour un bébé";
+
+    // Vérifier qu'il y a au moins un passager
+    if (reservationForm.passagers.length === 0) {
+      newErrors.passagers = "Vous devez ajouter au moins un passager";
     }
 
-    // Validation du téléphone (format simple)
-    if (
-      ticketForm.telephone &&
-      !/^[0-9+\-\s]{8,}$/.test(ticketForm.telephone)
-    ) {
-      newErrors.telephone = "Le numéro de téléphone n'est pas valide";
+    // Compter les adultes et bébés
+    const adultes = reservationForm.passagers.filter(
+      (p) => p.type_passager === "Adulte"
+    );
+    const bebes = reservationForm.passagers.filter(
+      (p) => p.type_passager === "Bébé"
+    );
+
+    // Vérifier qu'il y a au moins un adulte si des bébés sont présents
+    if (bebes.length > 0 && adultes.length === 0) {
+      alert("❌ Il doit y avoir au moins un adulte pour accompagner les bébés !");
+      return false;
     }
+
+    // Vérifier chaque passager
+    reservationForm.passagers.forEach((passager, index) => {
+      const passagerErrors = {};
+
+      if (!passager.nom.trim()) {
+        passagerErrors.nom = "Le nom est obligatoire";
+      }
+      if (!passager.prenom.trim()) {
+        passagerErrors.prenom = "Le prénom est obligatoire";
+      }
+      if (!passager.numero_piece.trim()) {
+        passagerErrors.numero_piece =
+          "Le numéro de pièce d'identité est obligatoire";
+      }
+      if (!passager.telephone.trim()) {
+        passagerErrors.telephone = "Le numéro de téléphone est obligatoire";
+      }
+      if (!passager.adresse.trim()) {
+        passagerErrors.adresse = "L'adresse est obligatoire";
+      }
+
+      // Validation du téléphone (format simple)
+      if (passager.telephone && !/^[0-9+\-\s]{8,}$/.test(passager.telephone)) {
+        passagerErrors.telephone = "Le numéro de téléphone n'est pas valide";
+      }
+
+      // Si il y a des erreurs pour ce passager, les ajouter à newErrors
+      if (Object.keys(passagerErrors).length > 0) {
+        newErrors[`passager_${index}`] = passagerErrors;
+      }
+    });
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Fonction pour mettre à jour le formulaire de billet
-  const handleTicketFormChange = (field, value) => {
-    setTicketForm((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  // Fonction pour gérer la sélection des trajets
-  const handleTrajetSelection = (trajetIndex, isSelected) => {
-    setTicketForm((prev) => {
-      const newTrajets = isSelected
-        ? [...prev.trajets_selectionnes, trajetIndex]
-        : prev.trajets_selectionnes.filter((index) => index !== trajetIndex);
-
-      return {
-        ...prev,
-        trajets_selectionnes: newTrajets,
-      };
-    });
-  };
-
-  // Calcul automatique du montant total
+  // Calcul automatique du montant total pour tous les passagers
   React.useEffect(() => {
-    if (!voyage || !ticketForm.trajets_selectionnes.length) {
+    if (
+      !voyage ||
+      !reservationForm.trajets_selectionnes.length ||
+      !reservationForm.passagers.length
+    ) {
       setMontantTotal(0);
       return;
     }
@@ -260,20 +444,24 @@ export default function DetailVoyage() {
     // Multiplicateur selon la classe
     const multiplicateurClasse = {
       Economie: 1,
-      Vip: 1.5,
+      VIP: 1.5,
     };
 
-    // Le type de voyage est fixé à aller_simple
-    total =
-      ticketForm.trajets_selectionnes.length *
-      prixBase *
-      multiplicateurPassager[ticketForm.type_passager] *
-      multiplicateurClasse[ticketForm.classe];
+    // Calculer le prix pour chaque passager
+    reservationForm.passagers.forEach((passager) => {
+      const prixPassager =
+        reservationForm.trajets_selectionnes.length *
+        prixBase *
+        multiplicateurPassager[passager.type_passager] *
+        multiplicateurClasse[passager.classe];
+
+      total += prixPassager;
+    });
 
     setMontantTotal(Math.round(total));
-  }, [ticketForm, voyage]);
+  }, [reservationForm, voyage]);
 
-  // Fonction pour vérifier la disponibilité des places
+  // Fonction pour vérifier la disponibilité des places pour tous les passagers
   const verifierDisponibilite = async () => {
     const voyageRef = doc(db, "voyages", voyage.id);
     const voyageSnapshot = await getDoc(voyageRef);
@@ -283,219 +471,280 @@ export default function DetailVoyage() {
     }
 
     const voyageData = voyageSnapshot.data();
-    const placesDisponibles =
-      ticketForm.classe === "Economie"
-        ? (voyageData.place_disponible_eco || 0) -
-          (voyageData.place_prise_eco || 0)
-        : (voyageData.place_disponible_vip || 0) -
-          (voyageData.place_prise_vip || 0);
 
-    if (placesDisponibles < 1) {
+    // Compter les places nécessaires par classe
+    const placesNecessaires = {
+      Economie: 0,
+      VIP: 0,
+    };
+
+    reservationForm.passagers.forEach((passager) => {
+      placesNecessaires[passager.classe]++;
+    });
+
+    // Vérifier la disponibilité pour chaque classe
+    const placesDispoEco =
+      (voyageData.place_disponible_eco || 0) -
+      (voyageData.place_prise_eco || 0);
+    const placesDispoVip =
+      (voyageData.place_disponible_vip || 0) -
+      (voyageData.place_prise_vip || 0);
+
+    if (placesNecessaires.Economie > placesDispoEco) {
       throw new Error(
-        `Plus de places disponibles en classe ${ticketForm.classe}`
+        `Pas assez de places en classe Économie (${placesNecessaires.Economie} demandées, ${placesDispoEco} disponibles)`
       );
     }
 
-    return voyageData;
+    if (placesNecessaires.VIP > placesDispoVip) {
+      throw new Error(
+        `Pas assez de places en classe VIP (${placesNecessaires.VIP} demandées, ${placesDispoVip} disponibles)`
+      );
+    }
+
+    return { voyageData, placesNecessaires };
   };
 
-  // Fonction pour soumettre le formulaire
+  // Fonction pour soumettre le formulaire avec plusieurs passagers
   const handleTicketSubmit = async (e) => {
     e.preventDefault();
 
     // Validation avant soumission
     if (!validateForm()) {
-      // alert("Veuillez corriger les erreurs dans le formulaire");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // console.log("Début de l'enregistrement du billet...");
+      console.log("Début de l'enregistrement des billets...");
 
       // Vérifier la disponibilité des places en temps réel
-      const voyageActuel = await verifierDisponibilite();
+      const { voyageData, placesNecessaires } = await verifierDisponibilite();
+
+      // Trier les passagers : Adultes et Enfants d'abord, Bébés en dernier
+      const passagersOrdonnes = [
+        ...reservationForm.passagers.filter((p) => p.type_passager !== "Bébé"),
+        ...reservationForm.passagers.filter((p) => p.type_passager === "Bébé"),
+      ];
 
       // Utilisation d'une transaction atomique Firebase
       const result = await runTransaction(db, async (transaction) => {
-        // 1. Mettre à jour les places prises dans la collection Voyage
+        const ventes = [];
         const voyageRef = doc(db, "voyages", voyage.id);
-        const placeField =
-          ticketForm.classe === "Economie"
-            ? "place_prise_eco"
-            : "place_prise_vip";
-        const currentPlaces =
-          ticketForm.classe === "Economie"
-            ? voyageActuel.place_prise_eco || 0
-            : voyageActuel.place_prise_vip || 0;
+        let premierAdulteTicketId = null; // Pour les bébés
 
+        // 1. Mettre à jour les places prises dans le voyage
         transaction.update(voyageRef, {
-          [placeField]: currentPlaces + 1,
+          place_prise_eco:
+            (voyageData.place_prise_eco || 0) + placesNecessaires.Economie,
+          place_prise_vip:
+            (voyageData.place_prise_vip || 0) + placesNecessaires.VIP,
         });
-        // console.log("Places mises à jour dans le voyage");
 
-        // 2. Vérifier/créer le client dans la collection clients
-        let clientReference = null;
-        const clientsQuery = query(
-          collection(db, "clients"),
-          where("type_piece", "==", ticketForm.type_piece),
-          where("numero_piece", "==", ticketForm.numero_piece)
-        );
+        // 2. Traiter chaque passager dans l'ordre
+        for (const passager of passagersOrdonnes) {
+          // Vérifier/créer le client
+          let clientReference = null;
+          const clientsQuery = query(
+            collection(db, "clients"),
+            where("type_piece", "==", passager.type_piece),
+            where("numero_piece", "==", passager.numero_piece)
+          );
 
-        const clientsSnapshot = await getDocs(clientsQuery);
+          const clientsSnapshot = await getDocs(clientsQuery);
 
-        if (!clientsSnapshot.empty) {
-          // Client existe déjà
-          const clientDoc = clientsSnapshot.docs[0];
-          clientReference = clientDoc.id;
-          // console.log("Client existant trouvé:", clientReference);
-        } else {
-          // Créer nouveau client
-          const nouveauClient = {
-            nom: ticketForm.nom,
-            prenom: ticketForm.prenom,
-            adresse: ticketForm.adresse,
-            telephone: ticketForm.telephone,
-            numero_piece: ticketForm.numero_piece,
-            type_de_piece: ticketForm.type_piece,
-            sexe: ticketForm.sexe,
-            createAt: serverTimestamp(),
-            display_name: ticketForm.nom + " " + ticketForm.prenom,
+          if (!clientsSnapshot.empty) {
+            // Client existe déjà
+            clientReference = clientsSnapshot.docs[0].id;
+          } else {
+            // Créer nouveau client
+            const nouveauClient = {
+              nom: passager.nom,
+              prenom: passager.prenom,
+              adresse: passager.adresse,
+              telephone: passager.telephone,
+              numero_piece: passager.numero_piece,
+              type_de_piece: passager.type_piece,
+              sexe: passager.sexe,
+              createAt: serverTimestamp(),
+              display_name: `${passager.nom} ${passager.prenom}`,
+            };
+
+            const clientDocRef = doc(collection(db, "clients"));
+            transaction.set(clientDocRef, nouveauClient);
+            clientReference = clientDocRef.id;
+          }
+
+          // Calculer le montant pour ce passager
+          const prixBase = voyage.montant || 25000;
+          const multiplicateurPassager = {
+            Adulte: 1,
+            Enfant: 0.5,
+            Bébé: 0.1,
+          };
+          const multiplicateurClasse = {
+            Economie: 1,
+            VIP: 1.5,
           };
 
-          const clientDocRef = doc(collection(db, "clients"));
-          transaction.set(clientDocRef, nouveauClient);
-          clientReference = clientDocRef.id;
-          // console.log("Nouveau client créé:", clientReference);
+          const montantPassager = Math.round(
+            reservationForm.trajets_selectionnes.length *
+              prixBase *
+              multiplicateurPassager[passager.type_passager] *
+              multiplicateurClasse[passager.classe]
+          );
+
+          // Générer un numéro de billet unique
+          const numeroBillet =
+            Date.now().toString() +
+            Math.random().toString(36).substr(2, 5).toUpperCase();
+
+          // Enregistrer la vente
+          const nouvelleVente = {
+            noms: passager.nom || "",
+            prenoms: passager.prenom || "",
+            adresse: passager.adresse || "",
+            tel: passager.telephone || "",
+            numero: passager.numero_piece || "",
+            type_piece: passager.type_piece || "",
+            montant_ttc: montantPassager || 0,
+            numero_billet_parent:
+              passager.type_passager === "Bébé"
+                ? premierAdulteTicketId || ""
+                : "",
+            classe: passager.classe || "",
+            create_time: serverTimestamp(),
+            statuts: "Payer",
+            voyage_reference: voyageRef,
+            trajet: (reservationForm.trajets_selectionnes || []).map((index) =>
+              voyage?.trajet && voyage.trajet[index] ? voyage.trajet[index] : {}
+            ),
+            client_reference: clientReference || "",
+            client_name: `${passager.prenom || ""} ${
+              passager.nom || ""
+            }`.trim(),
+            type_paiement: "Mobile Money",
+            agent_reference: "",
+            agent_name: "",
+            sexe_client: passager.sexe || "",
+            isGo: false,
+            agence_reference: voyage?.agence_reference || "",
+            agence_name: voyage?.agence_name || "",
+            type_passager: passager.type_passager || "",
+            type_voyage: reservationForm.type_voyage,
+            createAt: serverTimestamp(),
+            numero_billet: numeroBillet,
+          };
+
+          // Nettoyer les valeurs undefined et null
+          Object.keys(nouvelleVente).forEach((key) => {
+            if (
+              nouvelleVente[key] === undefined ||
+              nouvelleVente[key] === null
+            ) {
+              if (key === "montant_ttc") {
+                nouvelleVente[key] = 0;
+              } else if (Array.isArray(nouvelleVente[key])) {
+                nouvelleVente[key] = [];
+              } else {
+                nouvelleVente[key] = "";
+              }
+            }
+            // Nettoyer les objets imbriqués dans trajet
+            if (key === "trajet" && Array.isArray(nouvelleVente[key])) {
+              nouvelleVente[key] = nouvelleVente[key].map((trajetItem) => {
+                const cleanedTrajet = {};
+                Object.keys(trajetItem).forEach((trajetKey) => {
+                  cleanedTrajet[trajetKey] = trajetItem[trajetKey] || "";
+                });
+                return cleanedTrajet;
+              });
+            }
+          });
+
+          // Enregistrer la vente
+          const venteDocRef = doc(collection(db, "ventes"));
+          transaction.set(venteDocRef, nouvelleVente);
+
+          // Sauvegarder l'ID du premier adulte pour les bébés
+          if (passager.type_passager === "Adulte" && !premierAdulteTicketId) {
+            premierAdulteTicketId = numeroBillet;
+          }
+
+          // Créer la sous-collection transaction
+          const transactionData = {
+            montant_total: montantPassager || 0,
+            statuts: "actif",
+            taxes: 0,
+            createAt: serverTimestamp(),
+            agentName: "",
+            agentReference: "",
+            agenceName: voyage?.agence_name || "",
+            agenceReference: voyage?.agence_reference || "",
+          };
+
+          // Nettoyer les données de transaction
+          Object.keys(transactionData).forEach((key) => {
+            if (
+              transactionData[key] === undefined ||
+              transactionData[key] === null
+            ) {
+              if (key === "montant_total" || key === "taxes") {
+                transactionData[key] = 0;
+              } else {
+                transactionData[key] = "";
+              }
+            }
+          });
+
+          const transactionDocRef = doc(
+            collection(db, "ventes", venteDocRef.id, "transactions_vente")
+          );
+          transaction.set(transactionDocRef, transactionData);
+
+          // Ajouter à la liste des ventes
+          ventes.push({
+            ...nouvelleVente,
+            id: venteDocRef.id,
+            voyage: voyage,
+          });
         }
 
-        // 3. Enregistrer la vente dans la collection vente
-        const nouvelleVente = {
-          noms: ticketForm.nom || "",
-          prenoms: ticketForm.prenom || "",
-          adresse: ticketForm.adresse || "",
-          tel: ticketForm.telephone || "",
-          numero: ticketForm.numero_piece || "",
-          type_piece: ticketForm.type_piece || "",
-          montant_ttc: montantTotal || 0,
-          numero_billet_parent:
-            ticketForm.type_passager === "Bébé"
-              ? ticketForm.numero_billet_parent || ""
-              : "",
-          classe: ticketForm.classe || "",
-          create_time: serverTimestamp(),
-          statuts: "Payer",
-          voyage_reference: voyageRef || "",
-          trajet: (ticketForm.trajets_selectionnes || []).map((index) =>
-            voyage?.trajet && voyage.trajet[index] ? voyage.trajet[index] : {}
-          ),
-          client_reference: clientReference || "",
-          client_name: `${ticketForm.prenom || ""} ${
-            ticketForm.nom || ""
-          }`.trim(),
-          type_paiement: "Mobile Money",
-          agent_reference: "",
-          agent_name: "",
-          sexe_client: ticketForm.sexe || "",
-          isGo: false,
-          agence_reference: voyage?.agence_reference || "",
-          agence_name: voyage?.agence_name || "",
-          type_passager: ticketForm.type_passager || "",
-          type_voyage: "Aller simple",
-          createAt: serverTimestamp(),
-        };
-
-        // Nettoyer les valeurs undefined et null de manière plus robuste
-        Object.keys(nouvelleVente).forEach((key) => {
-          if (nouvelleVente[key] === undefined || nouvelleVente[key] === null) {
-            if (key === "montant_ttc") {
-              nouvelleVente[key] = 0;
-            } else if (Array.isArray(nouvelleVente[key])) {
-              nouvelleVente[key] = [];
-            } else {
-              nouvelleVente[key] = "";
-            }
-          }
-          // Nettoyer les objets imbriqués dans trajet
-          if (key === "trajet" && Array.isArray(nouvelleVente[key])) {
-            nouvelleVente[key] = nouvelleVente[key].map((trajetItem) => {
-              const cleanedTrajet = {};
-              Object.keys(trajetItem).forEach((trajetKey) => {
-                if (
-                  trajetItem[trajetKey] === undefined ||
-                  trajetItem[trajetKey] === null
-                ) {
-                  cleanedTrajet[trajetKey] = "";
-                } else {
-                  cleanedTrajet[trajetKey] = trajetItem[trajetKey];
-                }
-              });
-              return cleanedTrajet;
-            });
-          }
-        });
-
-        const venteDocRef = doc(collection(db, "ventes"));
-        transaction.set(venteDocRef, nouvelleVente);
-        // console.log("Vente enregistrée:", venteDocRef.id);
-
-        // 4. Créer la sous-collection transaction AVS-820V
-        const transactionData = {
-          montant_total: montantTotal || 0,
-          statuts: "actif",
-          taxes: 0,
-          createAt: serverTimestamp(),
-          agentName: "",
-          agentReference: "",
-          agenceName: voyage?.agence_name || "",
-          agenceReference: voyage?.agence_reference || "",
-        };
-
-        // Nettoyer les données de transaction
-        Object.keys(transactionData).forEach((key) => {
-          if (
-            transactionData[key] === undefined ||
-            transactionData[key] === null
-          ) {
-            if (key === "montant_total" || key === "taxes") {
-              transactionData[key] = 0;
-            } else {
-              transactionData[key] = "";
-            }
-          }
-        });
-
-        const transactionDocRef = doc(
-          collection(db, "ventes", venteDocRef.id, "transactions_vente")
-        );
-        transaction.set(transactionDocRef, transactionData);
-        // console.log("Transaction créée");
-
-        return { venteId: venteDocRef.id, nouvelleVente };
+        return { ventes };
       });
 
-      // 5. Générer prévisualisation ET télécharger la facture PDF
-      // D'abord prévisualisation
-      await genererFacturePDF(result.venteId, result.nouvelleVente, true);
-      
-      // Puis téléchargement automatique après un petit délai
-      setTimeout(async () => {
-        const factureData = await genererFacturePDF(
-          result.venteId,
-          result.nouvelleVente,
-          false
-        );
-      }, 500);
-      //// console.log("Facture générée et téléchargée:", factureData);
+      // 5. Générer un PDF multi-pages (une page par passager)
+      await genererFactureMultiPassagers(result.ventes);
 
-      // alert(
-      //   `Billet réservé avec succès pour un montant de ${montantTotal.toLocaleString()} FCFA\nNuméro de vente: ${
-      //     result.venteId
-      //   }\nFacture: ${
-      //     factureData.numeroFacture
-      //   }\n\nLa facture a été téléchargée automatiquement.`
-      // );
+      // Réinitialiser le formulaire
+      setReservationForm({
+        type_voyage: "aller_simple",
+        trajets_selectionnes: [],
+        passagers: [
+          {
+            id: 1,
+            type_passager: "Adulte",
+            classe: "Economie",
+            type_piece: "Carte d'identité",
+            numero_piece: "",
+            nom: "",
+            prenom: "",
+            sexe: "Masculin",
+            telephone: "",
+            adresse: "",
+          },
+        ],
+      });
+
+      setErrors({});
+      setMontantTotal(0);
+
+      alert(
+        `${
+          result.ventes.length
+        } billet(s) réservé(s) avec succès pour un montant total de ${montantTotal.toLocaleString()} FCFA\n\nLa facture multi-pages a été téléchargée automatiquement.`
+      );
 
       // Fermer complètement le modal après succès
       const modalElement = document.getElementById("ticketModal");
@@ -537,28 +786,10 @@ export default function DetailVoyage() {
           const backdrops = document.querySelectorAll(".modal-backdrop");
           backdrops.forEach((backdrop) => backdrop.remove());
         }, 100);
-
-        // Reset du formulaire
-        setTicketForm({
-          type_voyage: "aller_simple",
-          type_passager: "Adulte",
-          classe: "Economie",
-          type_piece: "Carte d'identité",
-          numero_piece: "",
-          nom: "",
-          prenom: "",
-          sexe: "Masculin",
-          telephone: "",
-          adresse: "",
-          trajets_selectionnes: [],
-          numero_billet_parent: "",
-        });
-
-        setErrors({});
       }
     } catch (error) {
       console.error("Erreur lors de l'enregistrement:", error);
-      // alert(`Erreur lors de l'enregistrement du billet: ${error.message}`);
+      alert(`Erreur lors de l'enregistrement des billets: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -897,11 +1128,13 @@ export default function DetailVoyage() {
         aria-labelledby="ticketModalLabel"
         aria-hidden="true"
       >
-        <div className="modal-dialog modal-lg" role="document">
+        <div className="modal-dialog modal-xl" role="document">
           <div className="modal-content">
             <div className="modal-header">
               <h5 className="modal-title" id="ticketModalLabel">
-                Réservation de billet - {voyage?.libelle_bateau}
+                Réservation Multiple - {voyage?.libelle_bateau} (
+                {reservationForm.passagers.length} passager
+                {reservationForm.passagers.length > 1 ? "s" : ""})
               </h5>
               <button
                 type="button"
@@ -916,7 +1149,7 @@ export default function DetailVoyage() {
               <form onSubmit={handleTicketSubmit}>
                 {/* Informations sur le voyage */}
                 <div className="row mb-4">
-                  <div className="col-md-6">
+                  <div className="col-md-4">
                     <div className="card bg-light">
                       <div className="card-body">
                         <h6 className="card-title">Places disponibles</h6>
@@ -939,7 +1172,17 @@ export default function DetailVoyage() {
                       </div>
                     </div>
                   </div>
-                  <div className="col-md-6">
+                  <div className="col-md-4">
+                    <div className="card bg-info text-white">
+                      <div className="card-body">
+                        <h6 className="card-title">Passagers</h6>
+                        <h4 className="mb-0">
+                          {reservationForm.passagers.length}
+                        </h4>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-md-4">
                     <div className="card bg-primary text-white">
                       <div className="card-body">
                         <h6 className="card-title">Montant total</h6>
@@ -951,332 +1194,29 @@ export default function DetailVoyage() {
                   </div>
                 </div>
 
-                {/* Type de passager */}
-                <div className="form-group mb-3">
-                  <label className="form-label">Type de passager</label>
-                  <div className="row">
-                    <div className="col-md-4">
-                      <div className="custom-control custom-radio mb-2">
-                        <input
-                          type="radio"
-                          id="Adulte"
-                          defaultChecked
-                          name="type_passager"
-                          className="custom-control-input"
-                          checked={ticketForm.type_passager === "Adulte"}
-                          onChange={() =>
-                            handleTicketFormChange("type_passager", "Adulte")
-                          }
-                        />
-                        <label
-                          className="custom-control-label"
-                          htmlFor="Adulte"
-                        >
-                          Adulte
-                        </label>
-                      </div>
-                    </div>
-                    <div className="col-md-4">
-                      <div className="custom-control custom-radio mb-2">
-                        <input
-                          type="radio"
-                          id="Enfant"
-                          name="type_passager"
-                          className="custom-control-input"
-                          checked={ticketForm.type_passager === "Enfant"}
-                          onChange={() =>
-                            handleTicketFormChange("type_passager", "Enfant")
-                          }
-                        />
-                        <label
-                          className="custom-control-label"
-                          htmlFor="Enfant"
-                        >
-                          Enfant
-                        </label>
-                      </div>
-                    </div>
-                    <div className="col-md-4">
-                      <div className="custom-control custom-radio mb-2">
-                        <input
-                          type="radio"
-                          id="Bébé"
-                          name="type_passager"
-                          className="custom-control-input"
-                          checked={ticketForm.type_passager === "Bébé"}
-                          onChange={() =>
-                            handleTicketFormChange("type_passager", "Bébé")
-                          }
-                        />
-                        <label className="custom-control-label" htmlFor="Bébé">
-                          Bébé
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Champ conditionnel : Code ticket parent pour bébé */}
-                {ticketForm.type_passager === "Bébé" && (
-                  <div className="form-group mb-3">
-                    <label
-                      className="form-label"
-                      htmlFor="numero_billet_parent"
-                    >
-                      Code du ticket du parent{" "}
-                      <span className="text-danger">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      id="numero_billet_parent"
-                      placeholder="Entrez le code du ticket du parent"
-                      value={ticketForm.numero_billet_parent}
-                      onChange={(e) =>
-                        handleTicketFormChange(
-                          "numero_billet_parent",
-                          e.target.value
-                        )
-                      }
-                    />
-                    {errors.numero_billet_parent && (
-                      <div className="text-danger mt-1">
-                        {errors.numero_billet_parent}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Classe */}
-                <div className="form-group mb-3">
-                  <label className="form-label" htmlFor="classe">
-                    Classe
-                  </label>
-                  <select
-                    className="form-control"
-                    id="classe"
-                    value={ticketForm.classe}
-                    onChange={(e) =>
-                      handleTicketFormChange("classe", e.target.value)
-                    }
-                  >
-                    <option value="Economie">Économique</option>
-                    <option value="Vip">VIP</option>
-                  </select>
-                </div>
-
-                <div className="row">
-                  {/* Type de pièce d'identité */}
-                  <div className="col-md-6">
-                    <div className="form-group mb-3">
-                      <label className="form-label" htmlFor="type_piece">
-                        Type de pièce d'identité
-                      </label>
-                      <select
-                        className="form-control"
-                        id="type_piece"
-                        value={ticketForm.type_piece}
-                        onChange={(e) =>
-                          handleTicketFormChange("type_piece", e.target.value)
-                        }
-                        required
-                      >
-                        <option value="Carte d'identité">
-                          Carte d'identité
-                        </option>
-                        <option value="Passeport">Passeport</option>
-                        <option value="Acte de Naissance">
-                          Acte de Naissance
-                        </option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Numéro de pièce */}
-                  <div className="col-md-6">
-                    <div className="form-group mb-3">
-                      <label className="form-label" htmlFor="numero_piece">
-                        Numéro de pièce d'identité
-                      </label>
-                      <input
-                        type="tel"
-                        className="form-control"
-                        id="numero_piece"
-                        value={ticketForm.numero_piece}
-                        onChange={(e) =>
-                          handleTicketFormChange("numero_piece", e.target.value)
-                        }
-                        required
-                      />
-                      {errors.numero_piece && (
-                        <small className="text-danger">
-                          {errors.numero_piece}
-                        </small>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="row">
-                  {/* Nom */}
-                  <div className="col-md-6">
-                    <div className="form-group mb-3">
-                      <label className="form-label" htmlFor="nom">
-                        Nom
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="nom"
-                        value={ticketForm.nom}
-                        onChange={(e) =>
-                          handleTicketFormChange("nom", e.target.value)
-                        }
-                        required
-                      />
-                      {errors.nom && (
-                        <small className="text-danger">{errors.nom}</small>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Prénom */}
-                  <div className="col-md-6">
-                    <div className="form-group mb-3">
-                      <label className="form-label" htmlFor="prenom">
-                        Prénom
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="prenom"
-                        value={ticketForm.prenom}
-                        onChange={(e) =>
-                          handleTicketFormChange("prenom", e.target.value)
-                        }
-                        required
-                      />
-                      {errors.prenom && (
-                        <small className="text-danger">{errors.prenom}</small>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Sexe */}
-                <div className="form-group mb-3">
-                  <label className="form-label">Sexe</label>
-                  <div className="row">
-                    <div className="col-md-6">
-                      <div className="custom-control custom-radio mb-2">
-                        <input
-                          type="radio"
-                          id="sexe_m"
-                          name="sexe"
-                          className="custom-control-input"
-                          checked={ticketForm.sexe === "Masculin"}
-                          onChange={() =>
-                            handleTicketFormChange("sexe", "Masculin")
-                          }
-                        />
-                        <label
-                          className="custom-control-label"
-                          htmlFor="sexe_m"
-                        >
-                          Masculin
-                        </label>
-                      </div>
-                    </div>
-                    <div className="col-md-6">
-                      <div className="custom-control custom-radio mb-2">
-                        <input
-                          type="radio"
-                          id="sexe_f"
-                          name="sexe"
-                          className="custom-control-input"
-                          checked={ticketForm.sexe === "Féminin"}
-                          onChange={() =>
-                            handleTicketFormChange("sexe", "Féminin")
-                          }
-                        />
-                        <label
-                          className="custom-control-label"
-                          htmlFor="sexe_f"
-                        >
-                          Féminin
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="row">
-                  {/* Téléphone */}
-                  <div className="col-md-6">
-                    <div className="form-group mb-3">
-                      <label className="form-label" htmlFor="telephone">
-                        Numéro de téléphone
-                      </label>
-                      <input
-                        type="tel"
-                        className="form-control"
-                        id="telephone"
-                        value={ticketForm.telephone}
-                        onChange={(e) =>
-                          handleTicketFormChange("telephone", e.target.value)
-                        }
-                        required
-                      />
-                      {errors.telephone && (
-                        <small className="text-danger">
-                          {errors.telephone}
-                        </small>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Adresse */}
-                  <div className="col-md-6">
-                    <div className="form-group mb-3">
-                      <label className="form-label" htmlFor="adresse">
-                        Adresse
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="adresse"
-                        value={ticketForm.adresse}
-                        onChange={(e) =>
-                          handleTicketFormChange("adresse", e.target.value)
-                        }
-                        required
-                      />
-                      {errors.adresse && (
-                        <small className="text-danger">{errors.adresse}</small>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Sélection des trajets */}
+                {/* Sélection des trajets (commun à tous) */}
                 <div className="form-group mb-4">
-                  <label className="form-label">Sélectionner les trajets</label>
-                  <div className="border rounded p-3">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <label className="form-label h6">
+                      Sélectionner les trajets (commun à tous les passagers)
+                    </label>
+                  </div>
+                  <div className="border rounded p-3 bg-light">
                     {voyage?.trajet && voyage.trajet.length > 0 ? (
                       voyage.trajet.map((etape, index) => (
                         <div
                           key={index}
-                          className="custom-control col-md-12 custom-checkbox mb-2 ml-1 row"
+                          className="custom-control custom-checkbox mb-2 col-md-12"
                         >
                           <input
                             type="checkbox"
                             className="custom-control-input"
                             id={`trajet_${index}`}
-                            checked={ticketForm.trajets_selectionnes.includes(
+                            checked={reservationForm.trajets_selectionnes.includes(
                               index
                             )}
                             onChange={(e) =>
-                              handleTrajetSelection(index, e.target.checked)
+                              mettreAJourTrajets(index, e.target.checked)
                             }
                           />
                           <label
@@ -1292,7 +1232,6 @@ export default function DetailVoyage() {
                               </small>
                             )}
                           </label>
-                          <br />
                         </div>
                       ))
                     ) : (
@@ -1304,18 +1243,240 @@ export default function DetailVoyage() {
                   )}
                 </div>
 
-                {/* Montant total (lecture seule) */}
-                <div className="form-group mb-3">
-                  <label className="form-label" htmlFor="montant_total">
-                    Montant total à payer
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control bg-light"
-                    id="montant_total"
-                    value={`${montantTotal.toLocaleString()} FCFA`}
-                    disabled
-                  />
+                {/* Section des passagers */}
+                <div className="form-group mb-4">
+                  <div className="d-flex justify-content-between align-items-center mb-3">
+                    <h6 className="mb-0">Passagers</h6>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-primary"
+                      onClick={ajouterPassager}
+                    >
+                      <em className="icon ni ni-plus"></em>
+                      Ajouter un passager
+                    </button>
+                  </div>
+
+                  {reservationForm.passagers.map((passager, index) => (
+                    <div key={passager.id} className="card mb-3">
+                      <div className="card-header">
+                        <div className="d-flex justify-content-between align-items-center">
+                          <h6 className="mb-0">Passager {index + 1}</h6>
+                          {reservationForm.passagers.length > 1 && (
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-danger"
+                              onClick={() => supprimerPassager(passager.id)}
+                            >
+                              <em className="icon ni ni-trash"></em>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <div className="card-body">
+                        {/* Type et classe */}
+                        <div className="row mb-3">
+                          <div className="col-md-6">
+                            <label className="form-label">
+                              Type de passager
+                            </label>
+                            <select
+                              className="form-control"
+                              value={passager.type_passager}
+                              onChange={(e) =>
+                                mettreAJourPassager(
+                                  passager.id,
+                                  "type_passager",
+                                  e.target.value
+                                )
+                              }
+                            >
+                              <option value="Adulte">Adulte</option>
+                              <option value="Enfant">Enfant</option>
+                              <option value="Bébé">Bébé</option>
+                            </select>
+                          </div>
+                          <div className="col-md-6">
+                            <label className="form-label">Classe</label>
+                            <select
+                              className="form-control"
+                              value={passager.classe}
+                              onChange={(e) =>
+                                mettreAJourPassager(
+                                  passager.id,
+                                  "classe",
+                                  e.target.value
+                                )
+                              }
+                            >
+                              <option value="Economie">Économique</option>
+                              <option value="VIP">VIP</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Type et numéro de pièce */}
+                        <div className="row mb-3">
+                          <div className="col-md-6">
+                            <label className="form-label">
+                              Type de pièce d'identité
+                            </label>
+                            <select
+                              className="form-control"
+                              value={passager.type_piece}
+                              onChange={(e) =>
+                                mettreAJourPassager(
+                                  passager.id,
+                                  "type_piece",
+                                  e.target.value
+                                )
+                              }
+                            >
+                              <option value="Carte d'identité">
+                                Carte d'identité
+                              </option>
+                              <option value="Passeport">Passeport</option>
+                              <option value="Acte de Naissance">
+                                Acte de Naissance
+                              </option>
+                            </select>
+                          </div>
+                          <div className="col-md-6">
+                            <label className="form-label">
+                              Numéro de pièce d'identité
+                            </label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={passager.numero_piece}
+                              onChange={(e) =>
+                                mettreAJourPassager(
+                                  passager.id,
+                                  "numero_piece",
+                                  e.target.value
+                                )
+                              }
+                              required
+                            />
+                            {errors[`passager_${index}`]?.numero_piece && (
+                              <small className="text-danger">
+                                {errors[`passager_${index}`].numero_piece}
+                              </small>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Nom et prénom */}
+                        <div className="row mb-3">
+                          <div className="col-md-6">
+                            <label className="form-label">Nom</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={passager.nom}
+                              onChange={(e) =>
+                                mettreAJourPassager(
+                                  passager.id,
+                                  "nom",
+                                  e.target.value
+                                )
+                              }
+                              required
+                            />
+                            {errors[`passager_${index}`]?.nom && (
+                              <small className="text-danger">
+                                {errors[`passager_${index}`].nom}
+                              </small>
+                            )}
+                          </div>
+                          <div className="col-md-6">
+                            <label className="form-label">Prénom</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={passager.prenom}
+                              onChange={(e) =>
+                                mettreAJourPassager(
+                                  passager.id,
+                                  "prenom",
+                                  e.target.value
+                                )
+                              }
+                              required
+                            />
+                            {errors[`passager_${index}`]?.prenom && (
+                              <small className="text-danger">
+                                {errors[`passager_${index}`].prenom}
+                              </small>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Sexe, téléphone et adresse */}
+                        <div className="row mb-3">
+                          <div className="col-md-4">
+                            <label className="form-label">Sexe</label>
+                            <select
+                              className="form-control"
+                              value={passager.sexe}
+                              onChange={(e) =>
+                                mettreAJourPassager(
+                                  passager.id,
+                                  "sexe",
+                                  e.target.value
+                                )
+                              }
+                            >
+                              <option value="Masculin">Masculin</option>
+                              <option value="Féminin">Féminin</option>
+                            </select>
+                          </div>
+                          <div className="col-md-4">
+                            <label className="form-label">Téléphone</label>
+                            <input
+                              type="tel"
+                              className="form-control"
+                              value={passager.telephone}
+                              onChange={(e) =>
+                                mettreAJourPassager(
+                                  passager.id,
+                                  "telephone",
+                                  e.target.value
+                                )
+                              }
+                              required
+                            />
+                            {errors[`passager_${index}`]?.telephone && (
+                              <small className="text-danger">
+                                {errors[`passager_${index}`].telephone}
+                              </small>
+                            )}
+                          </div>
+                          <div className="col-md-4">
+                            <label className="form-label">Adresse</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={passager.adresse}
+                              onChange={(e) =>
+                                mettreAJourPassager(
+                                  passager.id,
+                                  "adresse",
+                                  e.target.value
+                                )
+                              }
+                              required
+                            />
+                            {errors[`passager_${index}`]?.adresse && (
+                              <small className="text-danger">
+                                {errors[`passager_${index}`].adresse}
+                              </small>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
                 <div className="modal-footer">
@@ -1330,15 +1491,16 @@ export default function DetailVoyage() {
                     type="submit"
                     className="btn btn-primary"
                     disabled={
-                      !ticketForm.trajets_selectionnes.length ||
-                      !ticketForm.nom ||
-                      !ticketForm.prenom ||
+                      !reservationForm.trajets_selectionnes.length ||
+                      reservationForm.passagers.length === 0 ||
                       isSubmitting
                     }
                   >
                     {isSubmitting
                       ? "Enregistrement en cours..."
-                      : "Réserver le billet"}
+                      : `Réserver ${reservationForm.passagers.length} billet${
+                          reservationForm.passagers.length > 1 ? "s" : ""
+                        }`}
                   </button>
                 </div>
               </form>

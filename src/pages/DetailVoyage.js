@@ -348,10 +348,31 @@ export default function DetailVoyage() {
       doc.text("Bon voyage et à bientôt !", 235, 195);
     }
 
-    // Télécharger le PDF
-    const dateStr = new Date().toISOString().split("T")[0];
-    const nomFichier = `Billets_${dateStr}_${ventes.length}passagers.pdf`;
-    doc.save(nomFichier);
+    // 1. D'abord ouvrir la prévisualisation dans une nouvelle fenêtre
+    const pdfBlob = doc.output("blob");
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+    const previewWindow = window.open(pdfUrl, "_blank");
+
+    // Configurer la fenêtre de prévisualisation
+    if (previewWindow) {
+      previewWindow.document.title = `Billets - ${ventes.length} passager${
+        ventes.length > 1 ? "s" : ""
+      }`;
+
+      // Nettoyer l'URL après ouverture
+      previewWindow.onload = () => {
+        setTimeout(() => {
+          URL.revokeObjectURL(pdfUrl);
+        }, 1000);
+      };
+    }
+
+    // 2. Puis déclencher le téléchargement après un petit délai
+    setTimeout(() => {
+      const dateStr = new Date().toISOString().split("T")[0];
+      const nomFichier = `Billets_${dateStr}_${ventes.length}passagers.pdf`;
+      doc.save(nomFichier);
+    }, 1000); // Délai de 1 seconde pour laisser la prévisualisation s'ouvrir
 
     return true;
   };
@@ -380,7 +401,9 @@ export default function DetailVoyage() {
 
     // Vérifier qu'il y a au moins un adulte si des bébés sont présents
     if (bebes.length > 0 && adultes.length === 0) {
-      alert("❌ Il doit y avoir au moins un adulte pour accompagner les bébés !");
+      alert(
+        "❌ Il doit y avoir au moins un adulte pour accompagner les bébés !"
+      );
       return false;
     }
 
@@ -740,11 +763,11 @@ export default function DetailVoyage() {
       setErrors({});
       setMontantTotal(0);
 
-      alert(
-        `${
-          result.ventes.length
-        } billet(s) réservé(s) avec succès pour un montant total de ${montantTotal.toLocaleString()} FCFA\n\nLa facture multi-pages a été téléchargée automatiquement.`
-      );
+      // alert(
+      //   `✅ ${
+      //     result.ventes.length
+      //   } billet(s) réservé(s) avec succès pour un montant total de ${montantTotal.toLocaleString()} FCFA\n\n📄 Les billets ont été ouverts dans une nouvelle fenêtre pour visualisation\n💾 Le téléchargement automatique va commencer dans quelques secondes`
+      // );
 
       // Fermer complètement le modal après succès
       const modalElement = document.getElementById("ticketModal");

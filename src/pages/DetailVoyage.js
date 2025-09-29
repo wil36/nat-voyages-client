@@ -652,6 +652,7 @@ export default function DetailVoyage() {
             agent_name: "",
             sexe_client: passager.sexe || "",
             isGo: false,
+            is_client_reservation: true,
             agence_reference: voyage?.agence_reference || "",
             agence_name: voyage?.agence_name || "",
             type_passager: passager.type_passager || "",

@@ -27,169 +27,90 @@ export default function Conditions() {
                 <div className="card">
                   <div className="card-inner card-inner-xl">
                     <div className="entry">
-                      <h3>Terms and Conditions</h3>
                       <p>
-                        We’ve decided to make these Terms available under a{" "}
-                        <strong>Creative Commons</strong> license. You can grab
-                        a copy of these Terms and other legal documents on
-                        Github. You’re more than welcome to copy them, adapt
-                        them, and repurpose them for your own use.
+                        Bienvenue sur NAT Voyage, votre application mobile de réservation et de paiement de tickets de voyage (bus, bateau, train et avion) au Gabon.
+                        En utilisant cette application, vous acceptez les termes suivants.
                       </p>
-                      <h4>Introduction</h4>
+
+                      <h4>1. Objet de l'Application et des CGU</h4>
                       <p>
-                        These Website Standard Terms and Conditions written on
-                        this webpage shall manage your use of our website,
-                        Webiste Name accessible at Website.com.
+                        NAT Voyage est une plateforme mobile éditée par l'agence NAT Voyage. Elle vous permet de réserver et payer des tickets de voyage auprès de différentes compagnies de transport opérant au Gabon. Ces CGU définissent les règles d'utilisation de l'Application entre vous (l'utilisateur) et NAT Voyage.
                       </p>
+
+                      <h4>2. Propriété et Contenu</h4>
                       <p>
-                        These Terms will be applied fully and affect to your use
-                        of this Website. By using this Website, you agreed to
-                        accept all terms and conditions written in here. You
-                        must not use this Website if you disagree with any of
-                        these Website Standard Terms and Conditions.
+                        L'application NAT Voyage, son logo et son contenu (textes, images) sont la propriété de l'agence NAT Voyage. Vous disposez d'un droit d'usage limité à la réservation de tickets.
                       </p>
                       <p>
-                        Minors or people below 18 years old are not allowed to
-                        use this Website.
+                        Vous êtes seul responsable de l'exactitude des informations (identité, dates, contact, etc.) que vous saisissez. Toute information fausse ou inappropriée pourra entraîner l'annulation de la réservation.
                       </p>
-                      <h4>Intellectual Property Rights</h4>
+
+                      <h4>3. Utilisation, Achat et Paiement</h4>
+                      
+                      <h5><strong>Achat</strong></h5>
                       <p>
-                        Other than the content you own, under these Terms,
-                        Company Name and/or its licensors own all the
-                        intellectual property rights and materials contained in
-                        this Website.
+                        L'achat se fait directement sur l'application, sans nécessiter de compte utilisateur. Vous sélectionnez votre trajet (date, heure, destination, transporteur) et confirmez les détails.
                       </p>
+
+                      <h5><strong>Paiement Sécurisé</strong></h5>
                       <p>
-                        You are granted limited license only for purposes of
-                        viewing the material contained on this Website.
+                        Le paiement de votre ticket se fait de manière sécurisée via Airtel Money ou tout autre moyen de paiement mobile ou bancaire proposé. Le prix affiché inclut les frais de service de NAT Voyage.
                       </p>
-                      <h4>Restrictions</h4>
+
+                      <h5><strong>Confirmation</strong></h5>
                       <p>
-                        You are specifically restricted from all of the
-                        following:
+                        Une fois le paiement validé, votre ticket électronique (e-ticket) vous est délivré immédiatement dans l'application et par email (si fourni). Ce ticket est votre preuve d'achat et doit être présenté au transporteur.
                       </p>
-                      <ul className="list list-sm list-checked">
-                        <li>
-                          Publishing any Website material in any other media;
-                        </li>
-                        <li>
-                          Selling, sublicensing and/or otherwise commercializing
-                          any Website material;
-                        </li>
-                        <li>
-                          Publicly performing and/or showing any Website
-                          material;
-                        </li>
-                        <li>
-                          Using this Website in any way that is or may be
-                          damaging to this Website;
-                        </li>
-                        <li>
-                          Using this Website in any way that impacts user access
-                          to this Website;
-                        </li>
-                        <li>
-                          Using this Website contrary to applicable laws and
-                          regulations, or in any way may cause harm to the
-                          Website, or to any person or business entity;
-                        </li>
-                        <li>
-                          Engaging in any data mining, data harvesting, data
-                          extracting or any other similar activity in relation
-                          to this Website;
-                        </li>
-                        <li>
-                          Using this Website to engage in any advertising or
-                          marketing.
-                        </li>
-                        <li>
-                          Certain areas of this Website are restricted from
-                          being access by you and Company Name may further
-                          restrict access by you to any areas of this Website,
-                          at any time, in absolute discretion. Any user ID and
-                          password you may have for this Website are
-                          confidential and you must maintain confidentiality as
-                          well.
-                        </li>
-                      </ul>
-                      <h4>Your Content</h4>
+
+                      <h5><strong>Interdictions</strong></h5>
                       <p>
-                        In these Website Standard Terms and Conditions, “Your
-                        Content” shall mean any audio, video text, images or
-                        other material you choose to display on this Website. By
-                        displaying Your Content, you grant Company Name a
-                        non-exclusive, worldwide irrevocable, sub licensable
-                        license to use, reproduce, adapt, publish, translate and
-                        distribute it in any and all media.
+                        Il est strictement interdit de tenter de modifier, pirater ou utiliser l'application pour des usages illégaux ou non autorisés.
                       </p>
+
+                      <h4>4. Modification, Annulation et Remboursement</h4>
+                      
+                      <h5><strong>Conditions du Trajet</strong></h5>
                       <p>
-                        Your Content must be your own and must not be invading
-                        any third-party's rights. Company Name reserves the
-                        right to remove any of Your Content from this Website at
-                        any time without notice.
+                        NAT Voyage n'est qu'un intermédiaire. Les conditions de voyage (retards, annulations, taille des bagages, modification de l'heure) sont définies uniquement par l'agence de transport choisie (bus, bateau, train, avion).
                       </p>
-                      <h4>No warranties</h4>
+
+                      <h5><strong>Modification/Annulation</strong></h5>
                       <p>
-                        This Website is provided “as is,” with all faults, and
-                        Company Name express no representations or warranties,
-                        of any kind related to this Website or the materials
-                        contained on this Website. Also, nothing contained on
-                        this Website shall be interpreted as advising you.
+                        Toute demande de modification ou d'annulation doit être adressée directement à l'agence de transport concernée, conformément à leur politique.
                       </p>
-                      <h4>Limitation of liability</h4>
+
+                      <h5><strong>Frais de Service</strong></h5>
                       <p>
-                        In no event shall Company Name, nor any of its officers,
-                        directors and employees, shall be held liable for
-                        anything arising out of or in any way connected with
-                        your use of this Website whether such liability is under
-                        contract. Company Name, including its officers,
-                        directors and employees shall not be held liable for any
-                        indirect, consequential or special liability arising out
-                        of or in any way related to your use of this Website.
+                        Les frais de service de NAT Voyage facturés lors de l'achat en ligne ne sont jamais remboursables, même en cas d'annulation.
                       </p>
-                      <h4>Indemnification</h4>
+
+                      <h4>5. Responsabilité et Garanties</h4>
+                      
+                      <h5><strong>Limite de Responsabilité</strong></h5>
                       <p>
-                        You hereby indemnify to the fullest extent Company Name
-                        from and against any and/or all liabilities, costs,
-                        demands, causes of action, damages and expenses arising
-                        in any way related to your breach of any of the
-                        provisions of these Terms.
+                        NAT Voyage n'est pas responsable des incidents, accidents, retards, annulations ou tout désagrément survenant pendant le trajet. Notre rôle se limite à garantir l'achat et la validité de votre ticket.
                       </p>
-                      <h4>Severability</h4>
+
+                      <h5><strong>Garantie de Service</strong></h5>
                       <p>
-                        If any provision of these Terms is found to be invalid
-                        under any applicable law, such provisions shall be
-                        deleted without affecting the remaining provisions
-                        herein.
+                        L'application est fournie "telle quelle". En cas de problème technique (paiement non validé, ticket non reçu), nous nous engageons à mettre en œuvre tous les moyens raisonnables pour résoudre la situation (assistance par téléphone/email) dans les meilleurs délais.
                       </p>
-                      <h4>Variation of Terms</h4>
+
+                      <h4>6. Droit Applicable et Acceptation</h4>
+                      
+                      <h5><strong>Droit applicable</strong></h5>
                       <p>
-                        Company Name is permitted to revise these Terms at any
-                        time as it sees fit, and by using this Website you are
-                        expected to review these Terms on a regular basis.
+                        Ces CGU sont régies par les lois de la République Gabonaise. Tout litige sera porté devant les tribunaux compétents du Gabon.
                       </p>
-                      <h4>Assignment</h4>
+
+                      <h5><strong>Accord Intégral</strong></h5>
                       <p>
-                        The Company Name is allowed to assign, transfer, and
-                        subcontract its rights and/or obligations under these
-                        Terms without any notification. However, you are not
-                        allowed to assign, transfer, or subcontract any of your
-                        rights and/or obligations under these Terms.
+                        Ces CGU constituent l'accord complet entre vous et NAT Voyage concernant l'utilisation de l'application.
                       </p>
-                      <h4>Entire Agreement</h4>
+
+                      <h5><strong>Évolutions</strong></h5>
                       <p>
-                        These Terms constitute the entire agreement between
-                        Company Name and you in relation to your use of this
-                        Website, and supersede all prior agreements and
-                        understandings.
-                      </p>
-                      <h4>Governing Law &amp; Jurisdiction</h4>
-                      <p>
-                        These Terms will be governed by and interpreted in
-                        accordance with the laws of the State of Country, and
-                        you submit to the non-exclusive jurisdiction of the
-                        state and federal courts located in Country for the
-                        resolution of any disputes.
+                        NAT Voyage peut modifier ces CGU à tout moment. La version la plus récente est toujours celle disponible dans l'application. En continuant à utiliser le service après la modification, vous acceptez les nouvelles conditions.
                       </p>
                     </div>
                   </div>

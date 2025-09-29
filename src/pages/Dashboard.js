@@ -397,7 +397,7 @@ export default function Dashboard() {
                         color: "white",
                       }}
                     >
-                      Découvrez vos prochaines aventures
+                      Où souhaitez-vous aller au Gabon ?
                     </h1>
                     <p
                       className="hero-subtitle"
@@ -407,8 +407,8 @@ export default function Dashboard() {
                         opacity: 0.9,
                       }}
                     >
-                      Trouvez le voyage parfait parmi notre sélection de
-                      destinations exceptionnelles
+                      Voyagez en bus, bateau, train ou avion. Nous vous y
+                      emmenons en toute simplicité !
                     </p>
 
                     {/* Search Form */}

@@ -7,7 +7,7 @@ export default function Aide() {
   return (
     <>
       <NavBarComponent />
-      <div className="nk-content" style={{paddingBottom: '80px'}}>
+      <div className="nk-content" style={{ paddingBottom: "80px" }}>
         <div className="container">
           <div className="nk-content-inner">
             <div className="nk-content-body">
@@ -23,241 +23,663 @@ export default function Aide() {
                   </div>
                 </div>
               </div>
+
+              {/* <div className="nk-block">
+                <div className="card">
+                  <div className="card-inner">
+                    <h4 className="card-title mb-4">Foire Aux Questions (FAQ) - Application NAT Voyage</h4>
+                  </div>
+                </div>
+              </div> */}
+
+              {/* Section 1: Généralités sur l'Application */}
               <div className="nk-block">
                 <div className="card">
-                  <div id="faqs" className="accordion">
+                  <div className="card-inner">
+                    <h5 className="card-title">
+                      1. Généralités sur l'Application
+                    </h5>
+                  </div>
+                  <div id="faqs-section1" className="accordion">
                     <div className="accordion-item">
                       <a
                         href="#"
                         className="accordion-head"
                         data-toggle="collapse"
-                        data-target="#faq-q1"
+                        data-target="#faq-s1-q1"
                       >
-                        <h6 className="title">What is DashLite?</h6>
+                        <h6 className="title">Qu'est-ce que NAT Voyage ?</h6>
                         <span className="accordion-icon" />
                       </a>
                       <div
                         className="accordion-body collapse show"
-                        id="faq-q1"
-                        data-parent="#faqs"
+                        id="faq-s1-q1"
+                        data-parent="#faqs-section1"
                       >
                         <div className="accordion-inner">
                           <p>
-                            An overview of <strong>DashLite</strong> – is fully
-                            clean and premium designed admin template which
-                            included beautiful hand-crafted components &amp;
-                            elements. <strong>DashLite</strong> completely
-                            focusing on <strong>conceptual base apps</strong> or
-                            dashboard, as it’s equipped with pre-built screens
-                            as well.
-                          </p>
-                          <p>
-                            <strong>DashLite</strong> is powerful{" "}
-                            <strong>admin dashboard</strong> template that
-                            especially build for developers and programmers.{" "}
-                            <strong>DashLite</strong> comes with all kind of
-                            components, necessary elements and pre-build pages
-                            including <strong>3 conceptual apps</strong> screen
-                            that helps you to create your web apps or
-                            application.{" "}
+                            NAT Voyage est une application mobile qui vous
+                            permet d'acheter et de payer en ligne des tickets de
+                            voyage pour le bus, le bateau, le train et l'avion,
+                            auprès de différentes compagnies de transport
+                            opérant au Gabon.
                           </p>
                         </div>
                       </div>
                     </div>
-                    {/* .accordion-item */}
+
                     <div className="accordion-item">
                       <a
                         href="#"
                         className="accordion-head collapsed"
                         data-toggle="collapse"
-                        data-target="#faq-q2"
+                        data-target="#faq-s1-q2"
                       >
                         <h6 className="title">
-                          Do I need a Regular License or an Extended License?
+                          Doit-on créer un compte pour acheter un ticket ?
                         </h6>
                         <span className="accordion-icon" />
                       </a>
                       <div
                         className="accordion-body collapse"
-                        id="faq-q2"
-                        data-parent="#faqs"
+                        id="faq-s1-q2"
+                        data-parent="#faqs-section1"
                       >
                         <div className="accordion-inner">
                           <p>
-                            If your <strong>end product</strong> including the
-                            item is going to be free to the end user then a{" "}
-                            <strong>Regular License</strong> is what you need.
-                            An <strong>Extended License</strong> is required if
-                            the <strong>end user</strong> must pay to use the{" "}
-                            <strong>end product</strong>.
-                          </p>
-                          <p>
-                            You may charge your client for your services to
-                            create an end product, even under the{" "}
-                            <strong>Regular License</strong>.{" "}
-                            <strong>
-                              But you can’t use one of our Standard Licenses on
-                              multiple clients or jobs.
-                            </strong>
+                            Non. Vous pouvez acheter vos tickets directement
+                            dans l'application sans créer de compte. Cependant,
+                            fournir votre email vous permet de recevoir le
+                            ticket par courriel en plus de le voir à l'écran.
                           </p>
                         </div>
                       </div>
                     </div>
-                    {/* .accordion-item */}
+
                     <div className="accordion-item">
                       <a
                         href="#"
                         className="accordion-head collapsed"
                         data-toggle="collapse"
-                        data-target="#faq-q3"
-                      >
-                        <h6 className="title">What is Item Support?</h6>
-                        <span className="accordion-icon" />
-                      </a>
-                      <div
-                        className="accordion-body collapse"
-                        id="faq-q3"
-                        data-parent="#faqs"
-                      >
-                        <div className="accordion-inner">
-                          <p>
-                            We always provide{" "}
-                            <strong>free support for first 6 months</strong>{" "}
-                            from the purchase date. If you’re about to purchase
-                            the item, you’ll have the option to purchase{" "}
-                            <strong>extended item support</strong>, increasing
-                            the item support period up to a{" "}
-                            <strong>maximum of 12 months</strong> from the date
-                            of purchase.
-                          </p>
-                          <p>
-                            Yes, you can! If you have less than{" "}
-                            <strong>6 months remaining</strong> on a support
-                            item you’re eligible to renew your support.
-                          </p>
-                          <h6>What else is included?</h6>
-                          <ul className="list list-sm list-checked">
-                            <li>
-                              Answering all questions including technical about
-                              the item
-                            </li>
-                            <li>
-                              Help with defects in the item or included
-                              third-party assets
-                            </li>
-                            <li>
-                              Item updates to ensure ongoing compatibility and
-                              to resolve security vulnerabilities
-                            </li>
-                            <li>
-                              Updates to ensure the item works as described and
-                              is protected against major security concerns
-                            </li>
-                            <li>Included version updates for all items</li>
-                          </ul>
-                          <h6>What's not included in item support?</h6>
-                          <ul className="list list-sm list-cross">
-                            <li>Installation of the item</li>
-                            <li>Hosting, server environment, or software</li>
-                            <li>
-                              Help from authors of included third-party assets
-                            </li>
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-                    {/* .accordion-item */}
-                    <div className="accordion-item">
-                      <a
-                        href="#"
-                        className="accordion-head collapsed"
-                        data-toggle="collapse"
-                        data-target="#faq-q4"
-                      >
-                        <h6 className="title">How to download your Item</h6>
-                        <span className="accordion-icon" />
-                      </a>
-                      <div
-                        className="accordion-body collapse"
-                        id="faq-q4"
-                        data-parent="#faqs"
-                      >
-                        <div className="accordion-inner">
-                          <p>
-                            Item should be downloaded{" "}
-                            <strong>immediately</strong> after{" "}
-                            <strong>purchasing</strong>. You will get email with{" "}
-                            <strong>download link</strong> from Envato once you
-                            paid.
-                          </p>
-                          <h6>Also you can download your item:</h6>
-                          <ul className="list list-sm">
-                            <li>
-                              Hover over your username and click '
-                              <strong>Downloads'</strong> from the drop-down
-                              menu.
-                            </li>
-                            <li>
-                              The downloads section displays a list of all the
-                              items purchased using your account.
-                            </li>
-                            <li>
-                              Click the <strong>'Download'</strong> button next
-                              to the item and select{" "}
-                              <strong>‘Main File(s)’</strong> which contains all
-                              files, or{" "}
-                              <strong>
-                                ‘Licence Certificate and Purchase Code’
-                              </strong>{" "}
-                              for the item licence information only.
-                            </li>
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-                    {/* .accordion-item */}
-                    <div className="accordion-item">
-                      <a
-                        href="#"
-                        className="accordion-head collapsed"
-                        data-toggle="collapse"
-                        data-target="#faq-q5"
+                        data-target="#faq-s1-q3"
                       >
                         <h6 className="title">
-                          How to contact before purchase?
+                          Quels types de transport puis-je réserver via NAT
+                          Voyage ?
                         </h6>
                         <span className="accordion-icon" />
                       </a>
                       <div
                         className="accordion-body collapse"
-                        id="faq-q5"
-                        data-parent="#faqs"
+                        id="faq-s1-q3"
+                        data-parent="#faqs-section1"
                       >
                         <div className="accordion-inner">
                           <p>
-                            If you want to ask questions about our product, or
-                            need help using our item you’ve purchased or just
-                            want to tell us how much you love our work, that's
-                            great!
-                          </p>
-                          <p>
-                            Contact us via email{" "}
-                            <a href="mailto:info@softnio.com">
-                              info(at)softnio.com
-                            </a>{" "}
-                            or Post your comment (are visible to everyone) on
-                            our item page after login into your account.
+                            Nous proposons la réservation pour le transport
+                            maritime (bateau), terrestre (bus, certaines
+                            navettes), ferroviaire (train) et aérien (vols
+                            intérieurs ou régionaux, selon les partenariats).
                           </p>
                         </div>
                       </div>
                     </div>
-                    {/* .accordion-item */}
+
+                    <div className="accordion-item">
+                      <a
+                        href="#"
+                        className="accordion-head collapsed"
+                        data-toggle="collapse"
+                        data-target="#faq-s1-q4"
+                      >
+                        <h6 className="title">
+                          L'application NAT Voyage est-elle gratuite ?
+                        </h6>
+                        <span className="accordion-icon" />
+                      </a>
+                      <div
+                        className="accordion-body collapse"
+                        id="faq-s1-q4"
+                        data-parent="#faqs-section1"
+                      >
+                        <div className="accordion-inner">
+                          <p>
+                            Oui, l'application NAT Voyage est entièrement
+                            gratuite à télécharger et à utiliser. Seuls les
+                            frais de service sont ajoutés au prix du ticket lors
+                            de l'achat.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="accordion-item">
+                      <a
+                        href="#"
+                        className="accordion-head collapsed"
+                        data-toggle="collapse"
+                        data-target="#faq-s1-q5"
+                      >
+                        <h6 className="title">
+                          Sur quelles plateformes l'application est-elle
+                          disponible ?
+                        </h6>
+                        <span className="accordion-icon" />
+                      </a>
+                      <div
+                        className="accordion-body collapse"
+                        id="faq-s1-q5"
+                        data-parent="#faqs-section1"
+                      >
+                        <div className="accordion-inner">
+                          <p>
+                            L'application NAT Voyage est disponible sur Android
+                            et iOS. Vous pouvez la télécharger gratuitement
+                            depuis Google Play Store ou Apple App Store.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   {/* .accordion */}
                 </div>
                 {/* .card */}
               </div>
-              {/* .nk-block */}
+
+              {/* Section 2: Achat et Paiement */}
+              <div className="nk-block">
+                <div className="card">
+                  <div className="card-inner">
+                    <h5 className="card-title">2. Achat et Paiement</h5>
+                  </div>
+                  <div id="faqs-section2" className="accordion">
+                    <div className="accordion-item">
+                      <a
+                        href="#"
+                        className="accordion-head collapsed"
+                        data-toggle="collapse"
+                        data-target="#faq-s2-q1"
+                      >
+                        <h6 className="title">
+                          Comment acheter un ticket sur NAT Voyage ?
+                        </h6>
+                        <span className="accordion-icon" />
+                      </a>
+                      <div
+                        className="accordion-body collapse"
+                        id="faq-s2-q1"
+                        data-parent="#faqs-section2"
+                      >
+                        <div className="accordion-inner">
+                          <ul className="list list-sm">
+                            <li>
+                              ➡️ Ouvrez l'application et sélectionnez votre
+                              trajet (départ, destination, date, type de
+                              transport).
+                            </li>
+                            <li>
+                              ➡️ Choisissez l'heure et la compagnie de transport
+                              souhaitée.
+                            </li>
+                            <li>
+                              ➡️ Renseignez les informations du passager (nom,
+                              contact) de manière exacte.
+                            </li>
+                            <li>➡️ Procédez au paiement sécurisé.</li>
+                            <li>
+                              ➡️ Votre ticket électronique (e-ticket) s'affiche
+                              immédiatement.
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="accordion-item">
+                      <a
+                        href="#"
+                        className="accordion-head collapsed"
+                        data-toggle="collapse"
+                        data-target="#faq-s2-q2"
+                      >
+                        <h6 className="title">
+                          Quels sont les moyens de paiement acceptés ?
+                        </h6>
+                        <span className="accordion-icon" />
+                      </a>
+                      <div
+                        className="accordion-body collapse"
+                        id="faq-s2-q2"
+                        data-parent="#faqs-section2"
+                      >
+                        <div className="accordion-inner">
+                          <p>
+                            Nous acceptons principalement le paiement sécurisé
+                            via Airtel Money et d'autres solutions de paiement
+                            mobile locales. Les cartes bancaires peuvent être
+                            acceptées selon les options disponibles.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="accordion-item">
+                      <a
+                        href="#"
+                        className="accordion-head collapsed"
+                        data-toggle="collapse"
+                        data-target="#faq-s2-q3"
+                      >
+                        <h6 className="title">
+                          Le prix du ticket sur l'application est-il le même
+                          qu'en agence ?
+                        </h6>
+                        <span className="accordion-icon" />
+                      </a>
+                      <div
+                        className="accordion-body collapse"
+                        id="faq-s2-q3"
+                        data-parent="#faqs-section2"
+                      >
+                        <div className="accordion-inner">
+                          <p>
+                            Le prix sur l'application inclut le prix de base du
+                            ticket fixé par la compagnie de transport plus des
+                            frais de service qui couvrent les coûts de la
+                            transaction en ligne et de la plateforme NAT Voyage.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="accordion-item">
+                      <a
+                        href="#"
+                        className="accordion-head collapsed"
+                        data-toggle="collapse"
+                        data-target="#faq-s2-q4"
+                      >
+                        <h6 className="title">
+                          Que se passe-t-il si mon paiement échoue ?
+                        </h6>
+                        <span className="accordion-icon" />
+                      </a>
+                      <div
+                        className="accordion-body collapse"
+                        id="faq-s2-q4"
+                        data-parent="#faqs-section2"
+                      >
+                        <div className="accordion-inner">
+                          <p>
+                            Si votre paiement échoue, vérifiez que le solde de
+                            votre compte Airtel Money ou bancaire est suffisant.
+                            Si le problème persiste, contactez notre service
+                            client avec l'heure de la tentative et le numéro
+                            utilisé. Aucun ticket n'est émis tant que le
+                            paiement n'est pas validé.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="accordion-item">
+                      <a
+                        href="#"
+                        className="accordion-head collapsed"
+                        data-toggle="collapse"
+                        data-target="#faq-s2-q5"
+                      >
+                        <h6 className="title">
+                          Puis-je acheter plusieurs tickets en une seule fois ?
+                        </h6>
+                        <span className="accordion-icon" />
+                      </a>
+                      <div
+                        className="accordion-body collapse"
+                        id="faq-s2-q5"
+                        data-parent="#faqs-section2"
+                      >
+                        <div className="accordion-inner">
+                          <p>
+                            Oui, vous pouvez acheter plusieurs tickets lors
+                            d'une même transaction. Assurez-vous de renseigner
+                            correctement les informations de chaque passager.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {/* .accordion */}
+                </div>
+                {/* .card */}
+              </div>
+
+              {/* Section 3: Le Ticket et le Voyage */}
+              <div className="nk-block">
+                <div className="card">
+                  <div className="card-inner">
+                    <h5 className="card-title">3. Le Ticket et le Voyage</h5>
+                  </div>
+                  <div id="faqs-section3" className="accordion">
+                    <div className="accordion-item">
+                      <a
+                        href="#"
+                        className="accordion-head collapsed"
+                        data-toggle="collapse"
+                        data-target="#faq-s3-q1"
+                      >
+                        <h6 className="title">
+                          Comment et quand vais-je recevoir mon ticket ?
+                        </h6>
+                        <span className="accordion-icon" />
+                      </a>
+                      <div
+                        className="accordion-body collapse"
+                        id="faq-s3-q1"
+                        data-parent="#faqs-section3"
+                      >
+                        <div className="accordion-inner">
+                          <p>
+                            Votre ticket électronique (e-ticket) est généré et
+                            affiché immédiatement à l'écran après la validation
+                            du paiement. Vous pouvez le télécharger au format
+                            PDF et/ou le recevoir par email si vous avez
+                            renseigné cette information.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="accordion-item">
+                      <a
+                        href="#"
+                        className="accordion-head collapsed"
+                        data-toggle="collapse"
+                        data-target="#faq-s3-q2"
+                      >
+                        <h6 className="title">
+                          Que dois-je présenter le jour du voyage ?
+                        </h6>
+                        <span className="accordion-icon" />
+                      </a>
+                      <div
+                        className="accordion-body collapse"
+                        id="faq-s3-q2"
+                        data-parent="#faqs-section3"
+                      >
+                        <div className="accordion-inner">
+                          <p>
+                            Vous devez présenter votre e-ticket (sur votre
+                            téléphone ou imprimé) ainsi qu'une pièce d'identité
+                            valide (CNI, Passeport, etc.) au comptoir de la
+                            compagnie de transport.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="accordion-item">
+                      <a
+                        href="#"
+                        className="accordion-head collapsed"
+                        data-toggle="collapse"
+                        data-target="#faq-s3-q3"
+                      >
+                        <h6 className="title">
+                          Que dois-je faire en cas de retard, d'annulation ou de
+                          changement d'horaire ?
+                        </h6>
+                        <span className="accordion-icon" />
+                      </a>
+                      <div
+                        className="accordion-body collapse"
+                        id="faq-s3-q3"
+                        data-parent="#faqs-section3"
+                      >
+                        <div className="accordion-inner">
+                          <p>
+                            NAT Voyage est un intermédiaire. En cas de problème
+                            lié au trajet (retard, annulation), vous devez
+                            contacter directement l'agence de transport
+                            concernée. Leurs conditions générales s'appliquent.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="accordion-item">
+                      <a
+                        href="#"
+                        className="accordion-head collapsed"
+                        data-toggle="collapse"
+                        data-target="#faq-s3-q4"
+                      >
+                        <h6 className="title">
+                          Mon ticket est-il transférable à une autre personne ?
+                        </h6>
+                        <span className="accordion-icon" />
+                      </a>
+                      <div
+                        className="accordion-body collapse"
+                        id="faq-s3-q4"
+                        data-parent="#faqs-section3"
+                      >
+                        <div className="accordion-inner">
+                          <p>
+                            Non, les tickets sont nominatifs et non
+                            transférables. Le nom sur le ticket doit
+                            correspondre exactement à celui de la pièce
+                            d'identité présentée le jour du voyage.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {/* .accordion */}
+                </div>
+                {/* .card */}
+              </div>
+
+              {/* Section 4: Annulation, Modification et Remboursement */}
+              <div className="nk-block">
+                <div className="card">
+                  <div className="card-inner">
+                    <h5 className="card-title">
+                      4. Annulation, Modification et Remboursement
+                    </h5>
+                  </div>
+                  <div id="faqs-section4" className="accordion">
+                    <div className="accordion-item">
+                      <a
+                        href="#"
+                        className="accordion-head collapsed"
+                        data-toggle="collapse"
+                        data-target="#faq-s4-q1"
+                      >
+                        <h6 className="title">
+                          Puis-je modifier mon ticket après l'achat ?
+                        </h6>
+                        <span className="accordion-icon" />
+                      </a>
+                      <div
+                        className="accordion-body collapse"
+                        id="faq-s4-q1"
+                        data-parent="#faqs-section4"
+                      >
+                        <div className="accordion-inner">
+                          <p>
+                            Toute modification (date, heure) dépend des règles
+                            de l'agence de transport choisie. Vous devez la
+                            contacter pour savoir si une modification est
+                            possible et si des frais s'appliquent.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="accordion-item">
+                      <a
+                        href="#"
+                        className="accordion-head collapsed"
+                        data-toggle="collapse"
+                        data-target="#faq-s4-q2"
+                      >
+                        <h6 className="title">
+                          Puis-je annuler mon ticket et être remboursé ?
+                        </h6>
+                        <span className="accordion-icon" />
+                      </a>
+                      <div
+                        className="accordion-body collapse"
+                        id="faq-s4-q2"
+                        data-parent="#faqs-section4"
+                      >
+                        <div className="accordion-inner">
+                          <p>
+                            La possibilité d'annulation et le montant du
+                            remboursement sont définis par la politique de
+                            l'agence de transport.
+                          </p>
+                          <p>
+                            <strong>Attention :</strong> Les frais de service
+                            perçus par NAT Voyage lors de l'achat en ligne ne
+                            sont <strong>JAMAIS remboursables</strong>, même si
+                            l'agence de transport accepte l'annulation.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="accordion-item">
+                      <a
+                        href="#"
+                        className="accordion-head collapsed"
+                        data-toggle="collapse"
+                        data-target="#faq-s4-q3"
+                      >
+                        <h6 className="title">
+                          Combien de temps avant le départ puis-je annuler ?
+                        </h6>
+                        <span className="accordion-icon" />
+                      </a>
+                      <div
+                        className="accordion-body collapse"
+                        id="faq-s4-q3"
+                        data-parent="#faqs-section4"
+                      >
+                        <div className="accordion-inner">
+                          <p>
+                            Les délais d'annulation varient selon chaque
+                            compagnie de transport. Consultez directement leur
+                            politique ou contactez-les pour connaître les
+                            conditions spécifiques à votre réservation.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {/* .accordion */}
+                </div>
+                {/* .card */}
+              </div>
+
+              {/* Section 5: Support et Assistance */}
+              <div className="nk-block">
+                <div className="card">
+                  <div className="card-inner">
+                    <h5 className="card-title">5. Support et Assistance</h5>
+                  </div>
+                  <div id="faqs-section5" className="accordion">
+                    <div className="accordion-item">
+                      <a
+                        href="#"
+                        className="accordion-head collapsed"
+                        data-toggle="collapse"
+                        data-target="#faq-s5-q1"
+                      >
+                        <h6 className="title">
+                          Comment contacter le service client NAT Voyage ?
+                        </h6>
+                        <span className="accordion-icon" />
+                      </a>
+                      <div
+                        className="accordion-body collapse"
+                        id="faq-s5-q1"
+                        data-parent="#faqs-section5"
+                      >
+                        <div className="accordion-inner">
+                          <p>
+                            Vous pouvez nous contacter via la section "Contact"
+                            de l'application, par email ou par téléphone. Nos
+                            coordonnées sont disponibles dans la section contact
+                            de l'application.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="accordion-item">
+                      <a
+                        href="#"
+                        className="accordion-head collapsed"
+                        data-toggle="collapse"
+                        data-target="#faq-s5-q2"
+                      >
+                        <h6 className="title">
+                          Que faire si j'ai perdu mon ticket électronique ?
+                        </h6>
+                        <span className="accordion-icon" />
+                      </a>
+                      <div
+                        className="accordion-body collapse"
+                        id="faq-s5-q2"
+                        data-parent="#faqs-section5"
+                      >
+                        <div className="accordion-inner">
+                          <p>
+                            Si vous avez fourni votre email lors de l'achat,
+                            vérifiez votre boîte de réception. Sinon, contactez
+                            notre service client avec les détails de votre
+                            transaction (heure, montant, numéro de téléphone
+                            utilisé) pour récupérer votre ticket.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="accordion-item">
+                      <a
+                        href="#"
+                        className="accordion-head collapsed"
+                        data-toggle="collapse"
+                        data-target="#faq-s5-q3"
+                      >
+                        <h6 className="title">
+                          L'application fonctionne-t-elle sans connexion
+                          internet ?
+                        </h6>
+                        <span className="accordion-icon" />
+                      </a>
+                      <div
+                        className="accordion-body collapse"
+                        id="faq-s5-q3"
+                        data-parent="#faqs-section5"
+                      >
+                        <div className="accordion-inner">
+                          <p>
+                            Une connexion internet est nécessaire pour effectuer
+                            des recherches et acheter des tickets. Cependant,
+                            une fois téléchargé, votre ticket peut être consulté
+                            hors ligne.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {/* .accordion */}
+                </div>
+                {/* .card */}
+              </div>
 
               <div className="nk-block">
                 <div className="card">

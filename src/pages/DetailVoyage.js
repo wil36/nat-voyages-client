@@ -30,6 +30,7 @@ export default function DetailVoyage() {
   const [reservationForm, setReservationForm] = useState({
     type_voyage: "aller_simple", // aller_simple ou aller_retour
     trajets_selectionnes: [], // tableau des indices des trajets sélectionnés - commun à tous
+    voyage_retour_id: "", // ID du voyage de retour sélectionné
     passagers: [
       {
         id: 1,
@@ -49,9 +50,118 @@ export default function DetailVoyage() {
   const [montantTotal, setMontantTotal] = useState(0);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [voyagesRetour, setVoyagesRetour] = useState([]);
+  const [loadingVoyagesRetour, setLoadingVoyagesRetour] = useState(false);
+  const [voyageRetourSelectionne, setVoyageRetourSelectionne] = useState(null);
 
   const handleBackNavigation = () => {
     navigate("/");
+  };
+
+  // Fonction pour récupérer les voyages de retour potentiels
+  const recupererVoyagesRetour = async () => {
+    if (!voyage || reservationForm.type_voyage !== "aller_retour") {
+      setVoyagesRetour([]);
+      return;
+    }
+
+    setLoadingVoyagesRetour(true);
+    try {
+      // Récupérer tous les voyages depuis l'état de navigation ou via une requête
+      let tousLesVoyages = [];
+
+      if (location.state && location.state.voyages) {
+        tousLesVoyages = location.state.voyages;
+      } else {
+        // Si pas de voyages en paramètre, faire une requête à Firestore
+        const voyagesQuery = query(collection(db, "voyages"));
+        const voyagesSnapshot = await getDocs(voyagesQuery);
+        tousLesVoyages = voyagesSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+      }
+
+      // Filtrer pour les voyages de retour potentiels
+      const voyageAller = voyage;
+      const dateVoyageAller = new Date(voyageAller.date_voyage);
+
+      // Extraire la ville de départ et d'arrivée du voyage aller
+      const premierTrajetAller = voyageAller.trajet?.[0];
+      const dernierTrajetAller =
+        voyageAller.trajet?.[voyageAller.trajet?.length - 1];
+
+      const villeDepart =
+        premierTrajetAller?.LieuDeDepartLibelle ||
+        premierTrajetAller?.lieu_depart;
+      const villeArrivee =
+        dernierTrajetAller?.LieuDArriverLibelle ||
+        dernierTrajetAller?.lieu_arrivee;
+
+      const voyagesRetourFiltres = tousLesVoyages.filter((v) => {
+        // Vérifier que ce n'est pas le même voyage
+        if (v.id === voyageAller.id) return false;
+
+        // Vérifier que la date est postérieure au voyage aller
+        const dateVoyageRetour = new Date(v.date_voyage);
+        if (dateVoyageRetour <= dateVoyageAller) return false;
+
+        // Vérifier que c'est le trajet inverse
+        const premierTrajetRetour = v.trajet?.[0];
+        const dernierTrajetRetour = v.trajet?.[v.trajet?.length - 1];
+
+        const villeDepartRetour =
+          premierTrajetRetour?.LieuDeDepartLibelle ||
+          premierTrajetRetour?.lieu_depart;
+        const villeArriveeRetour =
+          dernierTrajetRetour?.LieuDArriverLibelle ||
+          dernierTrajetRetour?.lieu_arrivee;
+
+        // Le voyage de retour doit aller de la destination vers l'origine
+        return (
+          villeDepartRetour === villeArrivee &&
+          villeArriveeRetour === villeDepart
+        );
+      });
+
+      setVoyagesRetour(voyagesRetourFiltres);
+    } catch (error) {
+      console.error(
+        "Erreur lors de la récupération des voyages de retour:",
+        error
+      );
+      setVoyagesRetour([]);
+    } finally {
+      setLoadingVoyagesRetour(false);
+    }
+  };
+
+  // Fonction pour gérer le changement de type de voyage
+  const handleTypeVoyageChange = (typeVoyage) => {
+    setReservationForm((prev) => ({
+      ...prev,
+      type_voyage: typeVoyage,
+      voyage_retour_id:
+        typeVoyage === "aller_simple" ? "" : prev.voyage_retour_id,
+    }));
+
+    if (typeVoyage === "aller_retour") {
+      recupererVoyagesRetour();
+    } else {
+      setVoyagesRetour([]);
+      setVoyageRetourSelectionne(null);
+    }
+  };
+
+  // Fonction pour gérer la sélection du voyage de retour
+  const handleVoyageRetourChange = (voyageRetourId) => {
+    setReservationForm((prev) => ({
+      ...prev,
+      voyage_retour_id: voyageRetourId,
+    }));
+
+    const voyageRetour = voyagesRetour.find((v) => v.id === voyageRetourId);
+    setVoyageRetourSelectionne(voyageRetour);
   };
 
   // Fonctions de gestion des passagers
@@ -116,7 +226,7 @@ export default function DetailVoyage() {
 
     // Génération du QR code
     const numeroReference = venteId.substring(0, 8).toUpperCase();
-    const qrData = `Réf: ${numeroReference} | Montant: ${donneesVente.montant_ttc}F | Client: ${donneesVente.prenoms} ${donneesVente.noms}`;
+    const qrData = `${donneesVente.venteId}`;
     const qrDataUrl = await QRCode.toDataURL(qrData);
 
     // Titre principal
@@ -386,6 +496,13 @@ export default function DetailVoyage() {
       newErrors.trajets = "Vous devez sélectionner au moins un trajet";
     }
 
+    // Vérifier le voyage de retour si aller-retour
+    if (reservationForm.type_voyage === "aller_retour") {
+      if (!reservationForm.voyage_retour_id) {
+        newErrors.voyage_retour = "Vous devez sélectionner un voyage de retour";
+      }
+    }
+
     // Vérifier qu'il y a au moins un passager
     if (reservationForm.passagers.length === 0) {
       newErrors.passagers = "Vous devez ajouter au moins un passager";
@@ -454,8 +571,20 @@ export default function DetailVoyage() {
       return;
     }
 
+    // Vérifier si aller-retour et voyage de retour sélectionné
+    if (
+      reservationForm.type_voyage === "aller_retour" &&
+      !voyageRetourSelectionne
+    ) {
+      setMontantTotal(0);
+      return;
+    }
+
     let total = 0;
-    const prixBase = voyage.montant || 25000; // Prix de base par trajet
+    const prixBaseAller = voyage.montant || 25000; // Prix de base par trajet aller
+
+    // Pour l'aller-retour, utiliser le prix du voyage de retour s'il est disponible
+    const prixBaseRetour = voyageRetourSelectionne?.montant || prixBaseAller;
 
     // Multiplicateur selon le type de passager
     const multiplicateurPassager = {
@@ -472,17 +601,35 @@ export default function DetailVoyage() {
 
     // Calculer le prix pour chaque passager
     reservationForm.passagers.forEach((passager) => {
-      const prixPassager =
+      // Prix pour l'aller
+      const prixPassagerAller =
         reservationForm.trajets_selectionnes.length *
-        prixBase *
+        prixBaseAller *
         multiplicateurPassager[passager.type_passager] *
         multiplicateurClasse[passager.classe];
 
-      total += prixPassager;
+      let prixPassagerTotal = prixPassagerAller;
+
+      // Si aller-retour, ajouter le prix du retour
+      if (
+        reservationForm.type_voyage === "aller_retour" &&
+        voyageRetourSelectionne
+      ) {
+        const nombreTrajetsRetour = voyageRetourSelectionne.trajet?.length || 1;
+        const prixPassagerRetour =
+          nombreTrajetsRetour *
+          prixBaseRetour *
+          multiplicateurPassager[passager.type_passager] *
+          multiplicateurClasse[passager.classe];
+
+        prixPassagerTotal += prixPassagerRetour;
+      }
+
+      total += prixPassagerTotal;
     });
 
     setMontantTotal(Math.round(total));
-  }, [reservationForm, voyage]);
+  }, [reservationForm, voyage, voyageRetourSelectionne]);
 
   // Fonction pour vérifier la disponibilité des places pour tous les passagers
   const verifierDisponibilite = async () => {
@@ -599,8 +746,8 @@ export default function DetailVoyage() {
             clientReference = clientDocRef.id;
           }
 
-          // Calculer le montant pour ce passager
-          const prixBase = voyage.montant || 25000;
+          // Calculer le montant pour ce passager (aller seulement)
+          const prixBaseAller = voyage.montant || 25000;
           const multiplicateurPassager = {
             Adulte: 1,
             Enfant: 0.5,
@@ -611,27 +758,28 @@ export default function DetailVoyage() {
             VIP: 1.5,
           };
 
-          const montantPassager = Math.round(
+          const montantPassagerAller = Math.round(
             reservationForm.trajets_selectionnes.length *
-              prixBase *
+              prixBaseAller *
               multiplicateurPassager[passager.type_passager] *
               multiplicateurClasse[passager.classe]
           );
 
-          // Générer un numéro de billet unique
-          const numeroBillet =
+          // === BILLET ALLER ===
+          // Générer un numéro de billet unique pour l'aller
+          const numeroBilletAller =
             Date.now().toString() +
             Math.random().toString(36).substr(2, 5).toUpperCase();
 
-          // Enregistrer la vente
-          const nouvelleVente = {
+          // Enregistrer la vente pour l'aller
+          const venteAller = {
             noms: passager.nom || "",
             prenoms: passager.prenom || "",
             adresse: passager.adresse || "",
             tel: passager.telephone || "",
             numero: passager.numero_piece || "",
             type_piece: passager.type_piece || "",
-            montant_ttc: montantPassager || 0,
+            montant_ttc: montantPassagerAller || 0,
             numero_billet_parent:
               passager.type_passager === "Bébé"
                 ? premierAdulteTicketId || ""
@@ -657,27 +805,25 @@ export default function DetailVoyage() {
             agence_name: voyage?.agence_name || "",
             type_passager: passager.type_passager || "",
             type_voyage: reservationForm.type_voyage,
+            sens_voyage: "aller", // Nouveau champ pour identifier le sens
             createAt: serverTimestamp(),
-            numero_billet: numeroBillet,
+            numero_billet: numeroBilletAller,
           };
 
-          // Nettoyer les valeurs undefined et null
-          Object.keys(nouvelleVente).forEach((key) => {
-            if (
-              nouvelleVente[key] === undefined ||
-              nouvelleVente[key] === null
-            ) {
+          // Nettoyer les valeurs undefined et null pour l'aller
+          Object.keys(venteAller).forEach((key) => {
+            if (venteAller[key] === undefined || venteAller[key] === null) {
               if (key === "montant_ttc") {
-                nouvelleVente[key] = 0;
-              } else if (Array.isArray(nouvelleVente[key])) {
-                nouvelleVente[key] = [];
+                venteAller[key] = 0;
+              } else if (Array.isArray(venteAller[key])) {
+                venteAller[key] = [];
               } else {
-                nouvelleVente[key] = "";
+                venteAller[key] = "";
               }
             }
             // Nettoyer les objets imbriqués dans trajet
-            if (key === "trajet" && Array.isArray(nouvelleVente[key])) {
-              nouvelleVente[key] = nouvelleVente[key].map((trajetItem) => {
+            if (key === "trajet" && Array.isArray(venteAller[key])) {
+              venteAller[key] = venteAller[key].map((trajetItem) => {
                 const cleanedTrajet = {};
                 Object.keys(trajetItem).forEach((trajetKey) => {
                   cleanedTrajet[trajetKey] = trajetItem[trajetKey] || "";
@@ -687,18 +833,18 @@ export default function DetailVoyage() {
             }
           });
 
-          // Enregistrer la vente
-          const venteDocRef = doc(collection(db, "ventes"));
-          transaction.set(venteDocRef, nouvelleVente);
+          // Enregistrer la vente aller
+          const venteAllerDocRef = doc(collection(db, "ventes"));
+          transaction.set(venteAllerDocRef, venteAller);
 
           // Sauvegarder l'ID du premier adulte pour les bébés
           if (passager.type_passager === "Adulte" && !premierAdulteTicketId) {
-            premierAdulteTicketId = numeroBillet;
+            premierAdulteTicketId = numeroBilletAller;
           }
 
-          // Créer la sous-collection transaction
-          const transactionData = {
-            montant_total: montantPassager || 0,
+          // Créer la sous-collection transaction pour l'aller
+          const transactionAllerData = {
+            montant_total: montantPassagerAller || 0,
             statuts: "actif",
             taxes: 0,
             createAt: serverTimestamp(),
@@ -708,31 +854,169 @@ export default function DetailVoyage() {
             agenceReference: voyage?.agence_reference || "",
           };
 
-          // Nettoyer les données de transaction
-          Object.keys(transactionData).forEach((key) => {
+          // Nettoyer les données de transaction aller
+          Object.keys(transactionAllerData).forEach((key) => {
             if (
-              transactionData[key] === undefined ||
-              transactionData[key] === null
+              transactionAllerData[key] === undefined ||
+              transactionAllerData[key] === null
             ) {
               if (key === "montant_total" || key === "taxes") {
-                transactionData[key] = 0;
+                transactionAllerData[key] = 0;
               } else {
-                transactionData[key] = "";
+                transactionAllerData[key] = "";
               }
             }
           });
 
-          const transactionDocRef = doc(
-            collection(db, "ventes", venteDocRef.id, "transactions_vente")
+          const transactionAllerDocRef = doc(
+            collection(db, "ventes", venteAllerDocRef.id, "transactions_vente")
           );
-          transaction.set(transactionDocRef, transactionData);
+          transaction.set(transactionAllerDocRef, transactionAllerData);
 
           // Ajouter à la liste des ventes
           ventes.push({
-            ...nouvelleVente,
-            id: venteDocRef.id,
+            ...venteAller,
+            id: venteAllerDocRef.id,
             voyage: voyage,
           });
+
+          // === BILLET RETOUR (si aller-retour) ===
+          if (
+            reservationForm.type_voyage === "aller_retour" &&
+            voyageRetourSelectionne
+          ) {
+            // Calculer le montant pour le retour
+            const prixBaseRetour = voyageRetourSelectionne.montant || 25000;
+            const nombreTrajetsRetour =
+              voyageRetourSelectionne.trajet?.length || 1;
+
+            const montantPassagerRetour = Math.round(
+              nombreTrajetsRetour *
+                prixBaseRetour *
+                multiplicateurPassager[passager.type_passager] *
+                multiplicateurClasse[passager.classe]
+            );
+
+            // Générer un numéro de billet unique pour le retour
+            const numeroBilletRetour =
+              Date.now().toString() +
+              Math.random().toString(36).substr(2, 5).toUpperCase();
+
+            // Référence du voyage de retour
+            const voyageRetourRef = doc(
+              db,
+              "voyages",
+              reservationForm.voyage_retour_id
+            );
+
+            // Enregistrer la vente pour le retour
+            const venteRetour = {
+              noms: passager.nom || "",
+              prenoms: passager.prenom || "",
+              adresse: passager.adresse || "",
+              tel: passager.telephone || "",
+              numero: passager.numero_piece || "",
+              type_piece: passager.type_piece || "",
+              montant_ttc: montantPassagerRetour || 0,
+              numero_billet_parent:
+                passager.type_passager === "Bébé"
+                  ? premierAdulteTicketId || ""
+                  : "",
+              classe: passager.classe || "",
+              create_time: serverTimestamp(),
+              statuts: "Payer",
+              voyage_reference: voyageRetourRef,
+              trajet: voyageRetourSelectionne.trajet || [],
+              client_reference: clientReference || "",
+              client_name: `${passager.prenom || ""} ${
+                passager.nom || ""
+              }`.trim(),
+              type_paiement: "Mobile Money",
+              agent_reference: "",
+              agent_name: "",
+              sexe_client: passager.sexe || "",
+              isGo: false,
+              is_client_reservation: true,
+              agence_reference: voyageRetourSelectionne?.agence_reference || "",
+              agence_name: voyageRetourSelectionne?.agence_name || "",
+              type_passager: passager.type_passager || "",
+              type_voyage: reservationForm.type_voyage,
+              sens_voyage: "retour", // Nouveau champ pour identifier le sens
+              billet_aller_reference: venteAllerDocRef.id, // Lien vers le billet aller
+              createAt: serverTimestamp(),
+              numero_billet: numeroBilletRetour,
+            };
+
+            // Nettoyer les valeurs undefined et null pour le retour
+            Object.keys(venteRetour).forEach((key) => {
+              if (venteRetour[key] === undefined || venteRetour[key] === null) {
+                if (key === "montant_ttc") {
+                  venteRetour[key] = 0;
+                } else if (Array.isArray(venteRetour[key])) {
+                  venteRetour[key] = [];
+                } else {
+                  venteRetour[key] = "";
+                }
+              }
+              // Nettoyer les objets imbriqués dans trajet
+              if (key === "trajet" && Array.isArray(venteRetour[key])) {
+                venteRetour[key] = venteRetour[key].map((trajetItem) => {
+                  const cleanedTrajet = {};
+                  Object.keys(trajetItem).forEach((trajetKey) => {
+                    cleanedTrajet[trajetKey] = trajetItem[trajetKey] || "";
+                  });
+                  return cleanedTrajet;
+                });
+              }
+            });
+
+            // Enregistrer la vente retour
+            const venteRetourDocRef = doc(collection(db, "ventes"));
+            transaction.set(venteRetourDocRef, venteRetour);
+
+            // Créer la sous-collection transaction pour le retour
+            const transactionRetourData = {
+              montant_total: montantPassagerRetour || 0,
+              statuts: "actif",
+              taxes: 0,
+              createAt: serverTimestamp(),
+              agentName: "",
+              agentReference: "",
+              agenceName: voyageRetourSelectionne?.agence_name || "",
+              agenceReference: voyageRetourSelectionne?.agence_reference || "",
+            };
+
+            // Nettoyer les données de transaction retour
+            Object.keys(transactionRetourData).forEach((key) => {
+              if (
+                transactionRetourData[key] === undefined ||
+                transactionRetourData[key] === null
+              ) {
+                if (key === "montant_total" || key === "taxes") {
+                  transactionRetourData[key] = 0;
+                } else {
+                  transactionRetourData[key] = "";
+                }
+              }
+            });
+
+            const transactionRetourDocRef = doc(
+              collection(
+                db,
+                "ventes",
+                venteRetourDocRef.id,
+                "transactions_vente"
+              )
+            );
+            transaction.set(transactionRetourDocRef, transactionRetourData);
+
+            // Ajouter à la liste des ventes
+            ventes.push({
+              ...venteRetour,
+              id: venteRetourDocRef.id,
+              voyage: voyageRetourSelectionne,
+            });
+          }
         }
 
         return { ventes };
@@ -745,6 +1029,7 @@ export default function DetailVoyage() {
       setReservationForm({
         type_voyage: "aller_simple",
         trajets_selectionnes: [],
+        voyage_retour_id: "",
         passagers: [
           {
             id: 1,
@@ -760,6 +1045,10 @@ export default function DetailVoyage() {
           },
         ],
       });
+
+      // Réinitialiser les états des voyages de retour
+      setVoyagesRetour([]);
+      setVoyageRetourSelectionne(null);
 
       setErrors({});
       setMontantTotal(0);
@@ -1171,6 +1460,123 @@ export default function DetailVoyage() {
             </div>
             <div className="modal-body">
               <form onSubmit={handleTicketSubmit}>
+                {/* Type de voyage */}
+                <div className="form-group mb-4">
+                  <label className="form-label h6">Type de voyage</label>
+                  <div className="row">
+                    <div className="col-md-6">
+                      <div className="custom-control custom-radio">
+                        <input
+                          type="radio"
+                          className="custom-control-input"
+                          id="aller_simple"
+                          name="type_voyage"
+                          value="aller_simple"
+                          checked={
+                            reservationForm.type_voyage === "aller_simple"
+                          }
+                          onChange={(e) =>
+                            handleTypeVoyageChange(e.target.value)
+                          }
+                        />
+                        <label
+                          className="custom-control-label"
+                          htmlFor="aller_simple"
+                        >
+                          <strong>Aller simple</strong>
+                          <br />
+                          <small className="text-muted">
+                            Voyage dans un sens uniquement
+                          </small>
+                        </label>
+                      </div>
+                    </div>
+                    <div className="col-md-6">
+                      <div className="custom-control custom-radio">
+                        <input
+                          type="radio"
+                          className="custom-control-input"
+                          id="aller_retour"
+                          name="type_voyage"
+                          value="aller_retour"
+                          checked={
+                            reservationForm.type_voyage === "aller_retour"
+                          }
+                          onChange={(e) =>
+                            handleTypeVoyageChange(e.target.value)
+                          }
+                        />
+                        <label
+                          className="custom-control-label"
+                          htmlFor="aller_retour"
+                        >
+                          <strong>Aller-retour</strong>
+                          <br />
+                          <small className="text-muted">
+                            Voyage aller et retour
+                          </small>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sélection du voyage de retour si aller-retour */}
+                {reservationForm.type_voyage === "aller_retour" && (
+                  <div className="form-group mb-4">
+                    <label className="form-label h6">
+                      Sélectionner le voyage de retour
+                    </label>
+                    {loadingVoyagesRetour ? (
+                      <div className="text-center py-3">
+                        <div
+                          className="spinner-border spinner-border-sm"
+                          role="status"
+                        >
+                          <span className="sr-only">Chargement...</span>
+                        </div>
+                        <p className="mt-2 text-muted">
+                          Recherche des voyages de retour...
+                        </p>
+                      </div>
+                    ) : voyagesRetour.length > 0 ? (
+                      <select
+                        className="form-control"
+                        value={reservationForm.voyage_retour_id}
+                        onChange={(e) =>
+                          handleVoyageRetourChange(e.target.value)
+                        }
+                        required
+                      >
+                        <option value="">Choisir un voyage de retour</option>
+                        {voyagesRetour.map((voyageRetour) => (
+                          <option key={voyageRetour.id} value={voyageRetour.id}>
+                            {voyageRetour.date_voyage} -{" "}
+                            {voyageRetour.libelle_bateau}(
+                            {voyageRetour.montant?.toLocaleString() || "25 000"}{" "}
+                            FCFA)
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <div className="alert alert-warning">
+                        <em className="icon ni ni-alert-circle"></em>
+                        <p className="mb-0">
+                          Aucun voyage de retour disponible pour ce trajet. Les
+                          voyages de retour doivent partir de la destination
+                          vers l'origine et avoir une date postérieure au voyage
+                          aller.
+                        </p>
+                      </div>
+                    )}
+                    {errors.voyage_retour && (
+                      <small className="text-danger">
+                        {errors.voyage_retour}
+                      </small>
+                    )}
+                  </div>
+                )}
+
                 {/* Informations sur le voyage */}
                 <div className="row mb-4">
                   <div className="col-md-4">
@@ -1213,6 +1619,11 @@ export default function DetailVoyage() {
                         <h4 className="mb-0">
                           {montantTotal.toLocaleString()} FCFA
                         </h4>
+                        {reservationForm.type_voyage === "aller_retour" && (
+                          <small className="text-white-50">
+                            Aller + Retour inclus
+                          </small>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1517,6 +1928,8 @@ export default function DetailVoyage() {
                     disabled={
                       !reservationForm.trajets_selectionnes.length ||
                       reservationForm.passagers.length === 0 ||
+                      (reservationForm.type_voyage === "aller_retour" &&
+                        !reservationForm.voyage_retour_id) ||
                       isSubmitting
                     }
                   >
@@ -1524,6 +1937,10 @@ export default function DetailVoyage() {
                       ? "Enregistrement en cours..."
                       : `Réserver ${reservationForm.passagers.length} billet${
                           reservationForm.passagers.length > 1 ? "s" : ""
+                        } ${
+                          reservationForm.type_voyage === "aller_retour"
+                            ? "(Aller-Retour)"
+                            : "(Aller Simple)"
                         }`}
                   </button>
                 </div>

@@ -60,7 +60,12 @@ export default function DetailVoyage() {
 
   // Fonction pour récupérer les voyages de retour potentiels
   const recupererVoyagesRetour = async () => {
-    if (!voyage || reservationForm.type_voyage !== "aller_retour") {
+    console.log(location.state.voyages);
+    if (
+      !voyage ||
+      reservationForm.type_voyage !== "aller_retour" ||
+      reservationForm.trajets_selectionnes.length === 0
+    ) {
       setVoyagesRetour([]);
       return;
     }
@@ -82,48 +87,76 @@ export default function DetailVoyage() {
         }));
       }
 
+      console.log("Tous les voyages disponibles:", tousLesVoyages);
+
       // Filtrer pour les voyages de retour potentiels
       const voyageAller = voyage;
       const dateVoyageAller = new Date(voyageAller.date_voyage);
+      const dateAujourdhui = new Date();
+      dateAujourdhui.setHours(0, 0, 0, 0); // Remettre à minuit pour comparaison de dates
 
-      // Extraire la ville de départ et d'arrivée du voyage aller
-      const premierTrajetAller = voyageAller.trajet?.[0];
-      const dernierTrajetAller =
-        voyageAller.trajet?.[voyageAller.trajet?.length - 1];
+      // Extraire les trajets sélectionnés par l'utilisateur
+      const trajetsSelectionnes = reservationForm.trajets_selectionnes.map(
+        (index) => voyageAller.trajet[index]
+      );
+
+      if (trajetsSelectionnes.length === 0) {
+        setVoyagesRetour([]);
+        return;
+      }
+
+      // Obtenir le lieu de départ du premier trajet sélectionné et le lieu d'arrivée du dernier trajet sélectionné
+      const premierTrajetSelectionne = trajetsSelectionnes[0];
+      const dernierTrajetSelectionne =
+        trajetsSelectionnes[trajetsSelectionnes.length - 1];
 
       const villeDepart =
-        premierTrajetAller?.LieuDeDepartLibelle ||
-        premierTrajetAller?.lieu_depart;
+        premierTrajetSelectionne?.LieuDeDepartLibelle ||
+        premierTrajetSelectionne?.lieu_depart;
       const villeArrivee =
-        dernierTrajetAller?.LieuDArriverLibelle ||
-        dernierTrajetAller?.lieu_arrivee;
+        dernierTrajetSelectionne?.LieuDArriverLibelle ||
+        dernierTrajetSelectionne?.lieu_arrivee;
+
+      console.log("Trajets sélectionnés pour l'aller:", trajetsSelectionnes);
+      console.log("Ville de départ aller:", villeDepart);
+      console.log("Ville d'arrivée aller:", villeArrivee);
 
       const voyagesRetourFiltres = tousLesVoyages.filter((v) => {
         // Vérifier que ce n'est pas le même voyage
         if (v.id === voyageAller.id) return false;
 
-        // Vérifier que la date est postérieure au voyage aller
+        // Vérifier que la date est >= à aujourd'hui
         const dateVoyageRetour = new Date(v.date_voyage);
-        if (dateVoyageRetour <= dateVoyageAller) return false;
+        dateVoyageRetour.setHours(0, 0, 0, 0);
+        if (dateVoyageRetour < dateAujourdhui) return false;
 
-        // Vérifier que c'est le trajet inverse
-        const premierTrajetRetour = v.trajet?.[0];
-        const dernierTrajetRetour = v.trajet?.[v.trajet?.length - 1];
+        // Vérifier que le voyage de retour a des trajets qui correspondent à l'inverse des trajets sélectionnés
+        if (!v.trajet || v.trajet.length === 0) return false;
 
-        const villeDepartRetour =
-          premierTrajetRetour?.LieuDeDepartLibelle ||
-          premierTrajetRetour?.lieu_depart;
-        const villeArriveeRetour =
-          dernierTrajetRetour?.LieuDArriverLibelle ||
-          dernierTrajetRetour?.lieu_arrivee;
+        // Pour le retour, on cherche un trajet qui va de la destination vers l'origine
+        const hasMatchingTrajet = v.trajet.some((trajetRetour) => {
+          const villeDepartRetour =
+            trajetRetour?.LieuDArriverLibelle || trajetRetour?.lieu_arrivee;
+          const villeArriveeRetour =
+            trajetRetour?.LieuDeDepartLibelle || trajetRetour?.lieu_depart;
 
-        // Le voyage de retour doit aller de la destination vers l'origine
-        return (
-          villeDepartRetour === villeArrivee &&
-          villeArriveeRetour === villeDepart
-        );
+          console.log(
+            `Voyage ${v.id} - Trajet retour: ${villeDepartRetour} -> ${villeArriveeRetour}`
+          );
+          console.log(`Recherché: ${villeArrivee} -> ${villeDepart}`);
+
+          // Le voyage de retour doit avoir au moins un trajet qui va de la destination vers l'origine
+          const matches =
+            villeDepartRetour === villeArrivee &&
+            villeArriveeRetour === villeDepart;
+          console.log(`Match: ${matches}`);
+          return matches;
+        });
+
+        return hasMatchingTrajet;
       });
 
+      console.log("Voyages retour filtrés:", voyagesRetourFiltres);
       setVoyagesRetour(voyagesRetourFiltres);
     } catch (error) {
       console.error(
@@ -216,6 +249,18 @@ export default function DetailVoyage() {
     });
   };
 
+  // Effect pour surveiller les changements de trajets sélectionnés et relancer la recherche des voyages retour
+  useEffect(() => {
+    if (reservationForm.type_voyage === "aller_retour") {
+      if (reservationForm.trajets_selectionnes.length > 0) {
+        recupererVoyagesRetour();
+      } else {
+        setVoyagesRetour([]);
+        setVoyageRetourSelectionne(null);
+      }
+    }
+  }, [reservationForm.trajets_selectionnes, reservationForm.type_voyage]);
+
   // Fonction pour générer et télécharger le reçu PDF
   const genererFacturePDF = async (
     venteId,
@@ -225,7 +270,6 @@ export default function DetailVoyage() {
     const doc = new jsPDF("landscape"); // Mode paysage
 
     // Génération du QR code
-    const numeroReference = venteId.substring(0, 8).toUpperCase();
     const qrData = `${donneesVente.venteId}`;
     const qrDataUrl = await QRCode.toDataURL(qrData);
 
@@ -361,9 +405,8 @@ export default function DetailVoyage() {
       }
 
       // Génération du QR code pour ce passager
-      const numeroReference =
-        vente.numero_billet || vente.id.substring(0, 8).toUpperCase();
-      const qrData = `Réf: ${numeroReference} | Montant: ${vente.montant_ttc}F | Client: ${vente.prenoms} ${vente.noms}`;
+
+      const qrData = `${vente.venteId}`;
       const qrDataUrl = await QRCode.toDataURL(qrData);
 
       // Titre principal
@@ -581,48 +624,88 @@ export default function DetailVoyage() {
     }
 
     let total = 0;
-    const prixBaseAller = voyage.montant || 25000; // Prix de base par trajet aller
 
-    // Pour l'aller-retour, utiliser le prix du voyage de retour s'il est disponible
-    const prixBaseRetour = voyageRetourSelectionne?.montant || prixBaseAller;
+    // Fonction pour obtenir le tarif d'un trajet selon le type de passager et la classe
+    const obtenirTarifTrajet = (trajet, typePassager, classe) => {
+      let tarif = 0;
 
-    // Multiplicateur selon le type de passager
-    const multiplicateurPassager = {
-      Adulte: 1,
-      Enfant: 0.5,
-      Bébé: 0.1,
-    };
+      // Sélectionner le tarif selon le type de passager et la classe
+      if (typePassager === "Adulte") {
+        tarif =
+          classe === "VIP"
+            ? trajet.tarif_adulte_vip || 0
+            : trajet.tarif_adulte || 0;
+      } else if (typePassager === "Enfant") {
+        tarif =
+          classe === "VIP"
+            ? trajet.tarif_enfant_vip || 0
+            : trajet.tarif_enfant || 0;
+      } else if (typePassager === "Bébé") {
+        tarif =
+          classe === "VIP" ? trajet.tarif_bb_vip || 0 : trajet.tarif_bb || 0;
+      }
 
-    // Multiplicateur selon la classe
-    const multiplicateurClasse = {
-      Economie: 1,
-      VIP: 1.5,
+      return tarif;
     };
 
     // Calculer le prix pour chaque passager
     reservationForm.passagers.forEach((passager) => {
-      // Prix pour l'aller
-      const prixPassagerAller =
-        reservationForm.trajets_selectionnes.length *
-        prixBaseAller *
-        multiplicateurPassager[passager.type_passager] *
-        multiplicateurClasse[passager.classe];
+      let prixPassagerTotal = 0;
 
-      let prixPassagerTotal = prixPassagerAller;
+      // Calculer le prix pour les trajets aller sélectionnés
+      reservationForm.trajets_selectionnes.forEach((trajetIndex) => {
+        const trajet = voyage?.trajet?.[trajetIndex];
+        if (trajet) {
+          prixPassagerTotal += obtenirTarifTrajet(
+            trajet,
+            passager.type_passager,
+            passager.classe
+          );
+        }
+      });
 
       // Si aller-retour, ajouter le prix du retour
       if (
         reservationForm.type_voyage === "aller_retour" &&
         voyageRetourSelectionne
       ) {
-        const nombreTrajetsRetour = voyageRetourSelectionne.trajet?.length || 1;
-        const prixPassagerRetour =
-          nombreTrajetsRetour *
-          prixBaseRetour *
-          multiplicateurPassager[passager.type_passager] *
-          multiplicateurClasse[passager.classe];
+        // Pour le retour, trouver les trajets correspondants à l'inverse des trajets aller sélectionnés
+        const trajetsAllerSelectionnes =
+          reservationForm.trajets_selectionnes.map(
+            (index) => voyage?.trajet?.[index]
+          );
+        const premierTrajetAller = trajetsAllerSelectionnes[0];
+        const dernierTrajetAller =
+          trajetsAllerSelectionnes[trajetsAllerSelectionnes.length - 1];
 
-        prixPassagerTotal += prixPassagerRetour;
+        if (premierTrajetAller && dernierTrajetAller) {
+          const villeDepartAller =
+            premierTrajetAller.LieuDeDepartLibelle ||
+            premierTrajetAller.lieu_depart;
+          const villeArriveeAller =
+            dernierTrajetAller.LieuDArriverLibelle ||
+            dernierTrajetAller.lieu_arrivee;
+
+          // Trouver les trajets retour qui correspondent à l'inverse
+          voyageRetourSelectionne.trajet?.forEach((trajetRetour) => {
+            const villeDepartRetour =
+              trajetRetour.LieuDArriverLibelle || trajetRetour.lieu_arrivee;
+            const villeArriveeRetour =
+              trajetRetour.LieuDeDepartLibelle || trajetRetour.lieu_depart;
+
+            // Si ce trajet retour va de la destination vers l'origine, l'inclure dans le calcul
+            if (
+              villeDepartRetour === villeArriveeAller &&
+              villeArriveeRetour === villeDepartAller
+            ) {
+              prixPassagerTotal += obtenirTarifTrajet(
+                trajetRetour,
+                passager.type_passager,
+                passager.classe
+              );
+            }
+          });
+        }
       }
 
       total += prixPassagerTotal;
@@ -746,30 +829,48 @@ export default function DetailVoyage() {
             clientReference = clientDocRef.id;
           }
 
-          // Calculer le montant pour ce passager (aller seulement)
-          const prixBaseAller = voyage.montant || 25000;
-          const multiplicateurPassager = {
-            Adulte: 1,
-            Enfant: 0.5,
-            Bébé: 0.1,
-          };
-          const multiplicateurClasse = {
-            Economie: 1,
-            VIP: 1.5,
+          // Fonction pour obtenir le tarif d'un trajet selon le type de passager et la classe
+          const obtenirTarifTrajet = (trajet, typePassager, classe) => {
+            let tarif = 0;
+
+            if (typePassager === "Adulte") {
+              tarif =
+                classe === "VIP"
+                  ? trajet.tarif_adulte_vip || 0
+                  : trajet.tarif_adulte || 0;
+            } else if (typePassager === "Enfant") {
+              tarif =
+                classe === "VIP"
+                  ? trajet.tarif_enfant_vip || 0
+                  : trajet.tarif_enfant || 0;
+            } else if (typePassager === "Bébé") {
+              tarif =
+                classe === "VIP"
+                  ? trajet.tarif_bb_vip || 0
+                  : trajet.tarif_bb || 0;
+            }
+
+            return tarif;
           };
 
-          const montantPassagerAller = Math.round(
-            reservationForm.trajets_selectionnes.length *
-              prixBaseAller *
-              multiplicateurPassager[passager.type_passager] *
-              multiplicateurClasse[passager.classe]
-          );
+          // Calculer le montant pour ce passager (aller seulement)
+          let montantPassagerAller = 0;
+          reservationForm.trajets_selectionnes.forEach((trajetIndex) => {
+            const trajet = voyage?.trajet?.[trajetIndex];
+            if (trajet) {
+              montantPassagerAller += obtenirTarifTrajet(
+                trajet,
+                passager.type_passager,
+                passager.classe
+              );
+            }
+          });
 
           // === BILLET ALLER ===
           // Générer un numéro de billet unique pour l'aller
           const numeroBilletAller =
             Date.now().toString() +
-            Math.random().toString(36).substr(2, 5).toUpperCase();
+            Math.random().toString(36).substring(2, 7).toUpperCase();
 
           // Enregistrer la vente pour l'aller
           const venteAller = {
@@ -885,22 +986,49 @@ export default function DetailVoyage() {
             reservationForm.type_voyage === "aller_retour" &&
             voyageRetourSelectionne
           ) {
-            // Calculer le montant pour le retour
-            const prixBaseRetour = voyageRetourSelectionne.montant || 25000;
-            const nombreTrajetsRetour =
-              voyageRetourSelectionne.trajet?.length || 1;
+            // Calculer le montant pour le retour en ne prenant que les trajets correspondants à l'inverse
+            let montantPassagerRetour = 0;
+            const trajetsAllerSelectionnes =
+              reservationForm.trajets_selectionnes.map(
+                (index) => voyage?.trajet?.[index]
+              );
+            const premierTrajetAller = trajetsAllerSelectionnes[0];
+            const dernierTrajetAller =
+              trajetsAllerSelectionnes[trajetsAllerSelectionnes.length - 1];
 
-            const montantPassagerRetour = Math.round(
-              nombreTrajetsRetour *
-                prixBaseRetour *
-                multiplicateurPassager[passager.type_passager] *
-                multiplicateurClasse[passager.classe]
-            );
+            if (premierTrajetAller && dernierTrajetAller) {
+              const villeDepartAller =
+                premierTrajetAller.LieuDeDepartLibelle ||
+                premierTrajetAller.lieu_depart;
+              const villeArriveeAller =
+                dernierTrajetAller.LieuDArriverLibelle ||
+                dernierTrajetAller.lieu_arrivee;
+
+              // Calculer seulement pour les trajets retour correspondants
+              voyageRetourSelectionne.trajet?.forEach((trajetRetour) => {
+                const villeDepartRetour =
+                  trajetRetour.LieuDeDepartLibelle || trajetRetour.lieu_depart;
+                const villeArriveeRetour =
+                  trajetRetour.LieuDArriverLibelle || trajetRetour.lieu_arrivee;
+
+                // Si ce trajet retour va de la destination vers l'origine, l'inclure dans le calcul
+                if (
+                  villeDepartRetour === villeArriveeAller &&
+                  villeArriveeRetour === villeDepartAller
+                ) {
+                  montantPassagerRetour += obtenirTarifTrajet(
+                    trajetRetour,
+                    passager.type_passager,
+                    passager.classe
+                  );
+                }
+              });
+            }
 
             // Générer un numéro de billet unique pour le retour
             const numeroBilletRetour =
               Date.now().toString() +
-              Math.random().toString(36).substr(2, 5).toUpperCase();
+              Math.random().toString(36).substring(2, 7).toUpperCase();
 
             // Référence du voyage de retour
             const voyageRetourRef = doc(
@@ -908,6 +1036,14 @@ export default function DetailVoyage() {
               "voyages",
               reservationForm.voyage_retour_id
             );
+
+            // Définir les villes pour le filtrage des trajets retour
+            const villeDepartAller =
+              premierTrajetAller.LieuDeDepartLibelle ||
+              premierTrajetAller.lieu_depart;
+            const villeArriveeAller =
+              dernierTrajetAller.LieuDArriverLibelle ||
+              dernierTrajetAller.lieu_arrivee;
 
             // Enregistrer la vente pour le retour
             const venteRetour = {
@@ -926,7 +1062,21 @@ export default function DetailVoyage() {
               create_time: serverTimestamp(),
               statuts: "Payer",
               voyage_reference: voyageRetourRef,
-              trajet: voyageRetourSelectionne.trajet || [],
+              trajet:
+                voyageRetourSelectionne.trajet?.filter((trajetRetour) => {
+                  const villeDepartRetour =
+                    trajetRetour.LieuDeDepartLibelle ||
+                    trajetRetour.lieu_depart;
+                  const villeArriveeRetour =
+                    trajetRetour.LieuDArriverLibelle ||
+                    trajetRetour.lieu_arrivee;
+
+                  // Retourner seulement les trajets qui correspondent à l'inverse des trajets aller sélectionnés
+                  return (
+                    villeDepartRetour === villeArriveeAller &&
+                    villeArriveeRetour === villeDepartAller
+                  );
+                }) || [],
               client_reference: clientReference || "",
               client_name: `${passager.prenom || ""} ${
                 passager.nom || ""

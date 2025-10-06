@@ -324,38 +324,37 @@ export default function Dashboard() {
         </div>
       </div>
     );
-
+  //TODO voir la transmission de la liste des voyages à la page détail voyage
   const handleRedirect = (voyage) => {
     try {
-      // Clean the voyage object to remove non-serializable properties
-      const cleanVoyage = {
-        id: voyage.id,
-        libelle_bateau: voyage.libelle_bateau,
-        agence_name: voyage.agence_name,
-        date_voyage: voyage.date_voyage,
-        statut: voyage.statut,
-        montant: voyage.montant,
-        chauffeur: voyage.chauffeur,
-        hotesse1: voyage.hotesse1,
-        hotesse2: voyage.hotesse2,
-        mecanicien: voyage.mecanicien,
-        place_disponible_eco: voyage.place_disponible_eco,
-        place_disponible_vip: voyage.place_disponible_vip,
-        place_prise_eco: voyage.place_prise_eco,
-        place_prise_vip: voyage.place_prise_vip,
-        trajet: voyage.trajet
-          ? voyage.trajet.map((etape) => ({
-              LieuDeDepart: etape.LieuDeDepart,
-              LieuDeDepartLibelle: etape.LieuDeDepartLibelle,
-              LieuDArriver: etape.LieuDArriver,
-              LieuDArriverLibelle: etape.LieuDArriverLibelle,
-              heure_depart: etape.heure_depart,
-            }))
-          : [],
+      // Function to deeply clean objects of non-serializable properties
+      const cleanObject = (obj) => {
+        if (obj === null || obj === undefined) return obj;
+        if (typeof obj === 'string' || typeof obj === 'number' || typeof obj === 'boolean') return obj;
+        if (Array.isArray(obj)) return obj.map(cleanObject);
+        if (typeof obj === 'object') {
+          const cleaned = {};
+          for (const key in obj) {
+            const value = obj[key];
+            // Skip Firestore references and functions
+            if (value && typeof value === 'object' && value.constructor && 
+                (value.constructor.name === 'DocumentReference' || 
+                 value.constructor.name === 'Timestamp' ||
+                 typeof value === 'function')) {
+              continue;
+            }
+            cleaned[key] = cleanObject(value);
+          }
+          return cleaned;
+        }
+        return obj;
       };
 
+      const cleanVoyage = cleanObject(voyage);
+      const cleanVoyages = originalVoyages.map(cleanObject);
+
       navigate(`/detail-voyage/${voyage.id}`, {
-        state: { voyage: cleanVoyage },
+        state: { voyage: cleanVoyage, voyages: cleanVoyages },
       });
     } catch (err) {
       console.error("Navigation error:", err);

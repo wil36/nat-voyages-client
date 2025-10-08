@@ -1240,17 +1240,22 @@ export default function DetailVoyage() {
 
   useEffect(() => {
     // Check if voyage object was passed via navigation state
-    if (location.state && location.state.voyage) {
-      setVoyage(location.state.voyage);
-      setLoading(false);
-    } else {
-      // Fallback: fetch from Firestore if no state passed
+    if (location.state && location.state.voyageId) {
       const fetchVoyage = async () => {
         try {
           const docRef = doc(db, "voyages", location.state.voyageId);
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
-            setVoyage(docSnap.data());
+            const data = docSnap.data();
+            // Formater la date si c'est un Timestamp Firestore
+            if (data.date_voyage && typeof data.date_voyage === 'object' && data.date_voyage.seconds) {
+              data.date_voyage = new Date(data.date_voyage.seconds * 1000).toLocaleDateString('fr-FR') + ' ' + 
+                                 new Date(data.date_voyage.seconds * 1000).toLocaleTimeString('fr-FR', {
+                                   hour: '2-digit',
+                                   minute: '2-digit'
+                                 });
+            }
+            setVoyage(data);
           } else {
             // console.log("No such document!");
           }

@@ -48,7 +48,11 @@ export default function Dashboard() {
         if (dejaInclus) return false;
 
         // Vérifier si ce voyage a les mêmes lieux de départ/arrivée avec un chemin logique
-        const memesDepartArrivee = checkTrajetPath(voyage.trajet, filters.depart, filters.arrivee);
+        const memesDepartArrivee = checkTrajetPath(
+          voyage.trajet,
+          filters.depart,
+          filters.arrivee
+        );
 
         return memesDepartArrivee;
       });
@@ -74,7 +78,6 @@ export default function Dashboard() {
       setDateReference(dateRef);
     }
   };
-
 
   // Add this reset function
   const resetVoyages = () => {
@@ -165,24 +168,28 @@ export default function Dashboard() {
   // Fonction pour vérifier s'il existe un chemin logique dans le trajet
   const checkTrajetPath = (trajet, departId, arriveeId) => {
     if (!trajet || trajet.length === 0) return false;
-    
+
     // Si aucun filtre de lieu, retourner true
     if (!departId && !arriveeId) return true;
-    
+
     // Si seulement le départ est spécifié
     if (departId && !arriveeId) {
-      return trajet.some(etape => etape.LieuDeDepartReference?.id === departId);
+      return trajet.some(
+        (etape) => etape.LieuDeDepartReference?.id === departId
+      );
     }
-    
+
     // Si seulement l'arrivée est spécifiée
     if (!departId && arriveeId) {
-      return trajet.some(etape => etape.LieuDArriverReference?.id === arriveeId);
+      return trajet.some(
+        (etape) => etape.LieuDArriverReference?.id === arriveeId
+      );
     }
-    
+
     // Si les deux sont spécifiés, vérifier le chemin logique
     let departIndex = -1;
     let arriveeIndex = -1;
-    
+
     // Trouver l'index de l'étape où le lieu de départ apparaît
     for (let i = 0; i < trajet.length; i++) {
       if (trajet[i].LieuDeDepartReference?.id === departId) {
@@ -190,7 +197,7 @@ export default function Dashboard() {
         break;
       }
     }
-    
+
     // Trouver l'index de l'étape où le lieu d'arrivée apparaît
     for (let i = 0; i < trajet.length; i++) {
       if (trajet[i].LieuDArriverReference?.id === arriveeId) {
@@ -198,7 +205,7 @@ export default function Dashboard() {
         break;
       }
     }
-    
+
     // Vérifications supplémentaires pour les points intermédiaires
     // Un lieu peut être point d'arrivée d'une étape ET point de départ de la suivante
     if (departIndex === -1) {
@@ -209,7 +216,7 @@ export default function Dashboard() {
         }
       }
     }
-    
+
     if (arriveeIndex === -1) {
       for (let i = 0; i < trajet.length; i++) {
         if (trajet[i].LieuDeDepartReference?.id === arriveeId) {
@@ -218,9 +225,11 @@ export default function Dashboard() {
         }
       }
     }
-    
+
     // Pour qu'un trajet soit valide, le départ doit apparaître avant ou à la même étape que l'arrivée
-    return departIndex !== -1 && arriveeIndex !== -1 && departIndex <= arriveeIndex;
+    return (
+      departIndex !== -1 && arriveeIndex !== -1 && departIndex <= arriveeIndex
+    );
   };
 
   const handleSearch = (e) => {
@@ -255,7 +264,11 @@ export default function Dashboard() {
 
         // Departure and Arrival filter - check if there's a logical path
         if ((filters.depart || filters.arrivee) && matchesFilter) {
-          const hasValidPath = checkTrajetPath(voyage.trajet, filters.depart, filters.arrivee);
+          const hasValidPath = checkTrajetPath(
+            voyage.trajet,
+            filters.depart,
+            filters.arrivee
+          );
           if (!hasValidPath) {
             matchesFilter = false;
           }
@@ -352,23 +365,28 @@ export default function Dashboard() {
       const cleanObject = (obj, depth = 0) => {
         // Limite de profondeur pour éviter la récursion infinie
         if (depth > 10) return {};
-        
+
         if (obj === null || obj === undefined) return obj;
-        if (typeof obj === 'string' || typeof obj === 'number' || typeof obj === 'boolean') return obj;
-        
-        if (Array.isArray(obj)) {
-          return obj.map(item => cleanObject(item, depth + 1));
-        }
-        
-        if (typeof obj === 'object') {
+        if (
+          typeof obj === "string" ||
+          typeof obj === "number" ||
+          typeof obj === "boolean"
+        )
+          return obj;
+        if (Array.isArray(obj)) return obj.map(cleanObject);
+        if (typeof obj === "object") {
           const cleaned = {};
           for (const key in obj) {
             const value = obj[key];
             // Skip Firestore references and functions
-            if (value && typeof value === 'object' && value.constructor && 
-                (value.constructor.name === 'DocumentReference' || 
-                 value.constructor.name === 'Timestamp' ||
-                 typeof value === 'function')) {
+            if (
+              value &&
+              typeof value === "object" &&
+              value.constructor &&
+              (value.constructor.name === "DocumentReference" ||
+                value.constructor.name === "Timestamp" ||
+                typeof value === "function")
+            ) {
               continue;
             }
             cleaned[key] = cleanObject(value, depth + 1);

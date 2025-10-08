@@ -364,7 +364,7 @@ export default function Dashboard() {
       // Function to deeply clean objects of non-serializable properties
       const cleanObject = (obj, depth = 0) => {
         // Limite de profondeur pour éviter la récursion infinie
-        if (depth > 10) return {};
+        if (depth > 5) return {};
 
         if (obj === null || obj === undefined) return obj;
         if (

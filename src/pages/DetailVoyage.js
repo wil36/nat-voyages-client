@@ -91,69 +91,118 @@ export default function DetailVoyage() {
 
       // Filtrer pour les voyages de retour potentiels
       const voyageAller = voyage;
-      const dateVoyageAller = new Date(voyageAller.date_voyage);
-      const dateAujourdhui = new Date();
-      dateAujourdhui.setHours(0, 0, 0, 0); // Remettre à minuit pour comparaison de dates
 
-      // Extraire les trajets sélectionnés par l'utilisateur
-      const trajetsSelectionnes = reservationForm.trajets_selectionnes.map(
+      // Normaliser la date du voyage aller
+      let dateVoyageAller;
+      if (
+        voyageAller.date_voyage &&
+        typeof voyageAller.date_voyage === "object" &&
+        voyageAller.date_voyage.seconds
+      ) {
+        dateVoyageAller = new Date(voyageAller.date_voyage.seconds * 1000);
+      } else {
+        dateVoyageAller = new Date(voyageAller.date_voyage);
+      }
+
+      const dateAujourdhui = new Date();
+
+      // Extraire les trajets sélectionnés par l'utilisateur dans le bon ordre
+      const indicesTriés = [...reservationForm.trajets_selectionnes].sort(
+        (a, b) => a - b
+      );
+      const trajetsSelectionnes = indicesTriés.map(
         (index) => voyageAller.trajet[index]
       );
+
+      console.log(
+        "Indices sélectionnés (non triés):",
+        reservationForm.trajets_selectionnes
+      );
+      console.log("Indices sélectionnés (triés):", indicesTriés);
 
       if (trajetsSelectionnes.length === 0) {
         setVoyagesRetour([]);
         return;
       }
 
-      // Obtenir le lieu de départ du premier trajet sélectionné et le lieu d'arrivée du dernier trajet sélectionné
-      const premierTrajetSelectionne = trajetsSelectionnes[0];
-      const dernierTrajetSelectionne =
-        trajetsSelectionnes[trajetsSelectionnes.length - 1];
+      // Construire la séquence complète des villes du voyage aller
+      const sequenceVillesAller = [];
+      trajetsSelectionnes.forEach((trajet, index) => {
+        if (index === 0) {
+          // Premier trajet : ajouter départ et arrivée
+          sequenceVillesAller.push(
+            trajet?.LieuDeDepartLibelle || trajet?.lieu_depart
+          );
+        }
+        // Ajouter toujours l'arrivée
+        sequenceVillesAller.push(
+          trajet?.LieuDArriverLibelle || trajet?.lieu_arrivee
+        );
+      });
 
-      const villeDepart =
-        premierTrajetSelectionne?.LieuDeDepartLibelle ||
-        premierTrajetSelectionne?.lieu_depart;
-      const villeArrivee =
-        dernierTrajetSelectionne?.LieuDArriverLibelle ||
-        dernierTrajetSelectionne?.lieu_arrivee;
+      // La séquence retour est l'inverse de la séquence aller
+      const sequenceVillesRetour = [...sequenceVillesAller].reverse();
 
-      console.log("Trajets sélectionnés pour l'aller:", trajetsSelectionnes);
-      console.log("Ville de départ aller:", villeDepart);
-      console.log("Ville d'arrivée aller:", villeArrivee);
+      console.log("Séquence aller:", sequenceVillesAller);
+      console.log("Séquence retour recherchée:", sequenceVillesRetour);
 
       const voyagesRetourFiltres = tousLesVoyages.filter((v) => {
         // Vérifier que ce n'est pas le même voyage
         if (v.id === voyageAller.id) return false;
 
         // Vérifier que la date est >= à aujourd'hui
-        const dateVoyageRetour = new Date(v.date_voyage);
-        dateVoyageRetour.setHours(0, 0, 0, 0);
-        if (dateVoyageRetour < dateAujourdhui) return false;
-
+        let dateVoyageRetour;
+        if (
+          v.date_voyage &&
+          typeof v.date_voyage === "object" &&
+          v.date_voyage.seconds
+        ) {
+          dateVoyageRetour = new Date(v.date_voyage.seconds * 1000);
+        } else {
+          dateVoyageRetour = new Date(v.date_voyage);
+        }
+        // if (dateVoyageRetour < dateAujourdhui) return false;
+        if (dateVoyageRetour <= dateVoyageAller) return false;
         // Vérifier que le voyage de retour a des trajets qui correspondent à l'inverse des trajets sélectionnés
         if (!v.trajet || v.trajet.length === 0) return false;
 
-        // Pour le retour, on cherche un trajet qui va de la destination vers l'origine
-        const hasMatchingTrajet = v.trajet.some((trajetRetour) => {
-          const villeDepartRetour =
-            trajetRetour?.LieuDArriverLibelle || trajetRetour?.lieu_arrivee;
-          const villeArriveeRetour =
-            trajetRetour?.LieuDeDepartLibelle || trajetRetour?.lieu_depart;
-
-          console.log(
-            `Voyage ${v.id} - Trajet retour: ${villeDepartRetour} -> ${villeArriveeRetour}`
+        // Construire la séquence des villes du voyage retour candidat
+        const sequenceVoyageRetour = [];
+        v.trajet.forEach((trajet, index) => {
+          if (index === 0) {
+            // Premier trajet : ajouter départ et arrivée
+            sequenceVoyageRetour.push(
+              trajet?.LieuDeDepartLibelle || trajet?.lieu_depart
+            );
+          }
+          // Ajouter toujours l'arrivée
+          sequenceVoyageRetour.push(
+            trajet?.LieuDArriverLibelle || trajet?.lieu_arrivee
           );
-          console.log(`Recherché: ${villeArrivee} -> ${villeDepart}`);
-
-          // Le voyage de retour doit avoir au moins un trajet qui va de la destination vers l'origine
-          const matches =
-            villeDepartRetour === villeArrivee &&
-            villeArriveeRetour === villeDepart;
-          console.log(`Match: ${matches}`);
-          return matches;
         });
 
-        return hasMatchingTrajet;
+        console.log(`Voyage ${v.id} - Séquence:`, sequenceVoyageRetour);
+        console.log("Séquence retour recherchée:", sequenceVillesRetour);
+
+        // Vérifier si la séquence du voyage candidat contient la séquence retour recherchée
+        const containsReturnSequence = sequenceVillesRetour.every(
+          (ville, index) => {
+            if (index === sequenceVillesRetour.length - 1) return true; // Dernière ville, pas besoin de vérifier
+
+            // Chercher cette ville et la suivante dans la séquence du voyage candidat
+            const villeIndex = sequenceVoyageRetour.indexOf(ville);
+            if (villeIndex === -1) return false;
+
+            const villeSuivante = sequenceVillesRetour[index + 1];
+            return sequenceVoyageRetour[villeIndex + 1] === villeSuivante;
+          }
+        );
+
+        console.log(
+          `Voyage ${v.id} - Contient séquence retour:`,
+          containsReturnSequence
+        );
+        return containsReturnSequence;
       });
 
       console.log("Voyages retour filtrés:", voyagesRetourFiltres);
@@ -436,7 +485,7 @@ export default function DetailVoyage() {
         }
 
         // Génération du QR code pour ce passager
-        const qrData = `${vente.venteId}`;
+        const qrData = `${vente.id_vente}`;
         const qrDataUrl = await QRCode.toDataURL(qrData);
 
         // Titre principal
@@ -463,12 +512,10 @@ export default function DetailVoyage() {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
         doc.text("DETAILS DU VOYAGE", 20, 65);
-
-        // Extraire les villes de départ et d'arrivée
-        const premierTrajet = vente.trajet?.[0] || voyage?.trajet?.[0];
-        const dernierTrajet =
-          vente.trajet?.[vente.trajet?.length - 1] ||
-          voyage?.trajet?.[voyage?.trajet?.length - 1];
+        console.log("vente", vente);
+        // Extraire les villes de départ et d'arrivée uniquement du trajet de la vente
+        const premierTrajet = vente.trajet?.[0];
+        const dernierTrajet = vente.trajet?.[vente.trajet?.length - 1];
         const villeDepart =
           premierTrajet?.LieuDeDepartLibelle ||
           premierTrajet?.lieu_depart ||
@@ -502,7 +549,9 @@ export default function DetailVoyage() {
         doc.text(`Classe : ${vente.classe}`, 20, 136);
         doc.setFont("helvetica", "bold");
         doc.text(
-          `Montant TTC : ${vente.montant_ttc.toLocaleString("fr-FR")} FCFA`,
+          `Montant TTC : ${vente.montant_ttc
+            .toString()
+            .replace(/\B(?=(\d{3})+(?!\d))/g, " ")} FCFA`,
           20,
           142
         );
@@ -1002,14 +1051,9 @@ export default function DetailVoyage() {
             // Calculer le montant pour le retour en utilisant le voyage retour sélectionné
             let montantPassagerRetour = 0;
 
-            // Trouver le voyage retour dans la liste des voyages disponibles
-            const voyageRetourData = voyagesRetour.find(
-              (v) => v.id === reservationForm.voyage_retour_id
-            );
-
-            if (voyageRetourData && voyageRetourData.trajet) {
+            if (voyageRetourSelectionne && voyageRetourSelectionne.trajet) {
               // Calculer le montant pour tous les trajets du voyage retour sélectionné
-              voyageRetourData.trajet.forEach((trajetRetour) => {
+              voyageRetourSelectionne.trajet.forEach((trajetRetour) => {
                 montantPassagerRetour += obtenirTarifTrajet(
                   trajetRetour,
                   passager.type_passager,
@@ -1047,7 +1091,7 @@ export default function DetailVoyage() {
               create_time: serverTimestamp(),
               statuts: "Payer",
               voyage_reference: voyageRetourRef,
-              trajet: voyageRetourData?.trajet || [],
+              trajet: voyageRetourSelectionne?.trajet || [],
               client_reference: doc(db, "clients", clientReference) || "",
               client_name: `${passager.prenom || ""} ${
                 passager.nom || ""
@@ -1674,9 +1718,7 @@ export default function DetailVoyage() {
                         {voyagesRetour.map((voyageRetour) => (
                           <option key={voyageRetour.id} value={voyageRetour.id}>
                             {voyageRetour.date_voyage} -{" "}
-                            {voyageRetour.libelle_bateau}(
-                            {voyageRetour.montant?.toLocaleString() || "25 000"}{" "}
-                            FCFA)
+                            {voyageRetour.agence_name}
                           </option>
                         ))}
                       </select>

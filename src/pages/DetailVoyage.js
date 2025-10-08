@@ -270,7 +270,7 @@ export default function DetailVoyage() {
     const doc = new jsPDF("landscape"); // Mode paysage
 
     // Génération du QR code
-    const qrData = `${donneesVente.venteId}`;
+    const qrData = `${venteId}`;
     const qrDataUrl = await QRCode.toDataURL(qrData);
 
     // Titre principal
@@ -321,7 +321,11 @@ export default function DetailVoyage() {
     doc.setFont("helvetica", "bold");
     doc.text("DETAILS DE LA RESERVATION", 20, 105);
     doc.setFont("helvetica", "normal");
-    doc.text(`Numéro de référence : ${numeroReference}`, 20, 112);
+    doc.text(
+      `Numéro de référence : ${donneesVente.numero_billet || venteId}`,
+      20,
+      112
+    );
     doc.text(
       `Nom et prénom du passager : ${donneesVente.prenoms} ${donneesVente.noms}`,
       20,
@@ -330,11 +334,13 @@ export default function DetailVoyage() {
     doc.text(`Tel : ${donneesVente.tel}`, 20, 124);
     doc.text(`Type de passager : ${donneesVente.type_passager}`, 20, 130);
     doc.text(`Classe : ${donneesVente.classe}`, 20, 136);
+    doc.setFont("helvetica", "bold");
     doc.text(
-      `Montant TTC : ${donneesVente.montant_ttc.toLocaleString()}F`,
+      `Montant TTC : ${donneesVente.montant_ttc.toLocaleString("fr-FR")} FCFA`,
       20,
       142
     );
+    doc.setFont("helvetica", "normal");
     doc.text(`Encaissé par : Système NAT VOYAGES`, 20, 148);
 
     // Informations additionnelles si bébé
@@ -365,7 +371,9 @@ export default function DetailVoyage() {
     doc.text("Bon voyage et à bientôt !", 235, 195);
 
     // Prévisualisation ou téléchargement
-    const nomFichier = `Recu_${numeroReference}_${donneesVente.noms}.pdf`;
+    const nomFichier = `Recu_${donneesVente.numero_billet || venteId}_${
+      donneesVente.noms
+    }.pdf`;
 
     if (previewOnly) {
       // Ouvrir une nouvelle fenêtre avec prévisualisation
@@ -376,7 +384,7 @@ export default function DetailVoyage() {
         URL.revokeObjectURL(pdfUrl);
       };
       return {
-        numeroFacture: numeroReference,
+        numeroFacture: donneesVente.numero_billet || venteId,
         dateFacture: new Date().toLocaleDateString("fr-FR"),
       };
     } else {
@@ -396,109 +404,142 @@ export default function DetailVoyage() {
   const genererFactureMultiPassagers = async (ventes) => {
     const doc = new jsPDF("landscape");
 
-    for (let i = 0; i < ventes.length; i++) {
-      const vente = ventes[i];
-
-      // Ajouter une nouvelle page pour chaque passager (sauf le premier)
-      if (i > 0) {
-        doc.addPage();
+    // Grouper les ventes par passager pour les voyages aller-retour
+    const passagersGroup = {};
+    ventes.forEach((vente, index) => {
+      const passagerKey = `${vente.prenoms}_${vente.noms}_${vente.numero}`;
+      if (!passagersGroup[passagerKey]) {
+        passagersGroup[passagerKey] = [];
       }
+      passagersGroup[passagerKey].push({ vente, originalIndex: index });
+    });
 
-      // Génération du QR code pour ce passager
+    let pageCount = 0;
+    for (const [passagerKey, ventesPassager] of Object.entries(
+      passagersGroup
+    )) {
+      const passagerIndex = Object.keys(passagersGroup).indexOf(passagerKey);
 
-      const qrData = `${vente.venteId}`;
-      const qrDataUrl = await QRCode.toDataURL(qrData);
+      for (const venteData of ventesPassager) {
+        const vente = venteData.vente;
 
-      // Titre principal
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(14);
-      doc.text("NAT VOYAGES - TRANSPORT MARITIME", 20, 20);
+        // Ajouter une nouvelle page (sauf pour la première)
+        if (pageCount > 0) {
+          doc.addPage();
+        }
+        pageCount++;
 
-      // Infos de l'entreprise
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.text(`Agence: ${vente.agence_name || "Agence Principale"}`, 20, 28);
-      doc.text("Tél: +225 XX XX XX XX", 20, 34);
-      doc.text("Email: contact@natvoyages.ci", 20, 40);
+        // Déterminer le label du passager
+        let passagerLabel = `Passager ${passagerIndex + 1}`;
+        if (vente.sens_voyage) {
+          passagerLabel += ` (${vente.sens_voyage})`;
+        }
 
-      // Ligne séparatrice
-      doc.line(20, 45, 190, 45);
+        // Génération du QR code pour ce passager
+        const qrData = `${vente.venteId}`;
+        const qrDataUrl = await QRCode.toDataURL(qrData);
 
-      // Sous-titre avec numéro de passager
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.text(
-        `BILLET ELECTRONIQUE - Passager ${i + 1}/${ventes.length}`,
-        20,
-        55
-      );
+        // Titre principal
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.text("NAT VOYAGES - TRANSPORT MARITIME", 20, 20);
 
-      // Détails du voyage
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.text("DETAILS DU VOYAGE", 20, 65);
+        // Infos de l'entreprise
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Agence: ${vente.agence_name || "Agence Principale"}`, 20, 28);
+        doc.text("Tél: +225 XX XX XX XX", 20, 34);
+        doc.text("Email: contact@natvoyages.ci", 20, 40);
 
-      // Extraire les villes de départ et d'arrivée
-      const premierTrajet = vente.trajet?.[0] || voyage?.trajet?.[0];
-      const dernierTrajet =
-        vente.trajet?.[vente.trajet?.length - 1] ||
-        voyage?.trajet?.[voyage?.trajet?.length - 1];
-      const villeDepart =
-        premierTrajet?.LieuDeDepartLibelle ||
-        premierTrajet?.lieu_depart ||
-        "N/A";
-      const villeArrivee =
-        dernierTrajet?.LieuDArriverLibelle ||
-        dernierTrajet?.lieu_arrivee ||
-        "N/A";
+        // Ligne séparatrice
+        doc.line(20, 45, 190, 45);
 
-      doc.text(`Ville de départ : ${villeDepart}`, 20, 72);
-      doc.text(`Ville d'arrivée : ${villeArrivee}`, 20, 78);
-      doc.text(`Date de voyage : ${voyage?.date_voyage || "N/A"}`, 20, 84);
-      doc.text("Franchise de bagage : 20kgs", 20, 90);
+        // Sous-titre avec numéro de passager
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.text(`BILLET ELECTRONIQUE - ${passagerLabel}`, 20, 55);
 
-      // Réservation
-      doc.setFont("helvetica", "bold");
-      doc.text("DETAILS DE LA RESERVATION", 20, 105);
-      doc.setFont("helvetica", "normal");
-      doc.text(`Numéro de référence : ${numeroReference}`, 20, 112);
-      doc.text(
-        `Nom et prénom du passager : ${vente.prenoms} ${vente.noms}`,
-        20,
-        118
-      );
-      doc.text(`Tel : ${vente.tel}`, 20, 124);
-      doc.text(`Type de passager : ${vente.type_passager}`, 20, 130);
-      doc.text(`Classe : ${vente.classe}`, 20, 136);
-      doc.text(`Montant TTC : ${vente.montant_ttc.toLocaleString()}F`, 20, 142);
-      doc.text(`Encaissé par : Système NAT VOYAGES`, 20, 148);
+        // Détails du voyage
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text("DETAILS DU VOYAGE", 20, 65);
 
-      // Informations additionnelles si bébé
-      if (vente.numero_billet_parent) {
-        doc.text(`Ticket parent : ${vente.numero_billet_parent}`, 20, 154);
+        // Extraire les villes de départ et d'arrivée
+        const premierTrajet = vente.trajet?.[0] || voyage?.trajet?.[0];
+        const dernierTrajet =
+          vente.trajet?.[vente.trajet?.length - 1] ||
+          voyage?.trajet?.[voyage?.trajet?.length - 1];
+        const villeDepart =
+          premierTrajet?.LieuDeDepartLibelle ||
+          premierTrajet?.lieu_depart ||
+          "N/A";
+        const villeArrivee =
+          dernierTrajet?.LieuDArriverLibelle ||
+          dernierTrajet?.lieu_arrivee ||
+          "N/A";
+
+        doc.text(`Ville de départ : ${villeDepart}`, 20, 72);
+        doc.text(`Ville d'arrivée : ${villeArrivee}`, 20, 78);
+        doc.text(`Date de voyage : ${voyage?.date_voyage || "N/A"}`, 20, 84);
+        doc.text("Franchise de bagage : 20kgs", 20, 90);
+
+        // Réservation
+        doc.setFont("helvetica", "bold");
+        doc.text("DETAILS DE LA RESERVATION", 20, 105);
+        doc.setFont("helvetica", "normal");
+        doc.text(
+          `Numéro de référence : ${vente.numero_billet || vente.id}`,
+          20,
+          112
+        );
+        doc.text(
+          `Nom et prénom du passager : ${vente.prenoms} ${vente.noms}`,
+          20,
+          118
+        );
+        doc.text(`Tel : ${vente.tel}`, 20, 124);
+        doc.text(`Type de passager : ${vente.type_passager}`, 20, 130);
+        doc.text(`Classe : ${vente.classe}`, 20, 136);
+        doc.setFont("helvetica", "bold");
+        doc.text(
+          `Montant TTC : ${vente.montant_ttc.toLocaleString("fr-FR")} FCFA`,
+          20,
+          142
+        );
+        doc.setFont("helvetica", "normal");
+        doc.text(`Encaissé par : Système NAT VOYAGES`, 20, 148);
+
+        // Informations additionnelles si bébé
+        if (vente.numero_billet_parent) {
+          doc.text(`Ticket parent : ${vente.numero_billet_parent}`, 20, 154);
+        }
+
+        // Infos additionnelles
+        doc.setFont("helvetica", "bold");
+        doc.text("INFORMATIONS ADDITIONNELLES", 20, 170);
+        doc.setFont("helvetica", "normal");
+        doc.text("Billet non remboursable valable 3 mois", 20, 177);
+        doc.text(
+          "Pénalité changement de date : à partir de 5000 FCFA",
+          20,
+          183
+        );
+        doc.text("Pénalité départ manqué : 8000 FCFA", 20, 189);
+        doc.text("Pénalité autre modification : 5000 FCFA", 20, 195);
+
+        // Insertion du QR code
+        doc.addImage(qrDataUrl, "PNG", 220, 60, 40, 40);
+
+        // Date et heure d'émission + Bon voyage
+        const dateEmission = new Date().toLocaleString("fr-FR");
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Émis le : ${dateEmission}`, 220, 185);
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.text("Bon voyage et à bientôt !", 235, 195);
       }
-
-      // Infos additionnelles
-      doc.setFont("helvetica", "bold");
-      doc.text("INFORMATIONS ADDITIONNELLES", 20, 170);
-      doc.setFont("helvetica", "normal");
-      doc.text("Billet non remboursable valable 3 mois", 20, 177);
-      doc.text("Pénalité changement de date : à partir de 5000 FCFA", 20, 183);
-      doc.text("Pénalité départ manqué : 8000 FCFA", 20, 189);
-      doc.text("Pénalité autre modification : 5000 FCFA", 20, 195);
-
-      // Insertion du QR code
-      doc.addImage(qrDataUrl, "PNG", 220, 60, 40, 40);
-
-      // Date et heure d'émission + Bon voyage
-      const dateEmission = new Date().toLocaleString("fr-FR");
-      doc.setFontSize(8);
-      doc.setFont("helvetica", "normal");
-      doc.text(`Émis le : ${dateEmission}`, 220, 185);
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      doc.text("Bon voyage et à bientôt !", 235, 195);
     }
 
     // 1. D'abord ouvrir la prévisualisation dans une nouvelle fenêtre
@@ -669,43 +710,14 @@ export default function DetailVoyage() {
         reservationForm.type_voyage === "aller_retour" &&
         voyageRetourSelectionne
       ) {
-        // Pour le retour, trouver les trajets correspondants à l'inverse des trajets aller sélectionnés
-        const trajetsAllerSelectionnes =
-          reservationForm.trajets_selectionnes.map(
-            (index) => voyage?.trajet?.[index]
+        // Calculer le prix pour tous les trajets du voyage retour sélectionné
+        voyageRetourSelectionne.trajet?.forEach((trajetRetour) => {
+          prixPassagerTotal += obtenirTarifTrajet(
+            trajetRetour,
+            passager.type_passager,
+            passager.classe
           );
-        const premierTrajetAller = trajetsAllerSelectionnes[0];
-        const dernierTrajetAller =
-          trajetsAllerSelectionnes[trajetsAllerSelectionnes.length - 1];
-
-        if (premierTrajetAller && dernierTrajetAller) {
-          const villeDepartAller =
-            premierTrajetAller.LieuDeDepartLibelle ||
-            premierTrajetAller.lieu_depart;
-          const villeArriveeAller =
-            dernierTrajetAller.LieuDArriverLibelle ||
-            dernierTrajetAller.lieu_arrivee;
-
-          // Trouver les trajets retour qui correspondent à l'inverse
-          voyageRetourSelectionne.trajet?.forEach((trajetRetour) => {
-            const villeDepartRetour =
-              trajetRetour.LieuDArriverLibelle || trajetRetour.lieu_arrivee;
-            const villeArriveeRetour =
-              trajetRetour.LieuDeDepartLibelle || trajetRetour.lieu_depart;
-
-            // Si ce trajet retour va de la destination vers l'origine, l'inclure dans le calcul
-            if (
-              villeDepartRetour === villeArriveeAller &&
-              villeArriveeRetour === villeDepartAller
-            ) {
-              prixPassagerTotal += obtenirTarifTrajet(
-                trajetRetour,
-                passager.type_passager,
-                passager.classe
-              );
-            }
-          });
-        }
+        });
       }
 
       total += prixPassagerTotal;
@@ -909,6 +921,7 @@ export default function DetailVoyage() {
             sens_voyage: "aller", // Nouveau champ pour identifier le sens
             createAt: serverTimestamp(),
             numero_billet: numeroBilletAller,
+            id_vente: numeroBilletAller,
           };
 
           // Nettoyer les valeurs undefined et null pour l'aller
@@ -986,42 +999,22 @@ export default function DetailVoyage() {
             reservationForm.type_voyage === "aller_retour" &&
             voyageRetourSelectionne
           ) {
-            // Calculer le montant pour le retour en ne prenant que les trajets correspondants à l'inverse
+            // Calculer le montant pour le retour en utilisant le voyage retour sélectionné
             let montantPassagerRetour = 0;
-            const trajetsAllerSelectionnes =
-              reservationForm.trajets_selectionnes.map(
-                (index) => voyage?.trajet?.[index]
-              );
-            const premierTrajetAller = trajetsAllerSelectionnes[0];
-            const dernierTrajetAller =
-              trajetsAllerSelectionnes[trajetsAllerSelectionnes.length - 1];
 
-            if (premierTrajetAller && dernierTrajetAller) {
-              const villeDepartAller =
-                premierTrajetAller.LieuDeDepartLibelle ||
-                premierTrajetAller.lieu_depart;
-              const villeArriveeAller =
-                dernierTrajetAller.LieuDArriverLibelle ||
-                dernierTrajetAller.lieu_arrivee;
+            // Trouver le voyage retour dans la liste des voyages disponibles
+            const voyageRetourData = voyagesRetour.find(
+              (v) => v.id === reservationForm.voyage_retour_id
+            );
 
-              // Calculer seulement pour les trajets retour correspondants
-              voyageRetourSelectionne.trajet?.forEach((trajetRetour) => {
-                const villeDepartRetour =
-                  trajetRetour.LieuDeDepartLibelle || trajetRetour.lieu_depart;
-                const villeArriveeRetour =
-                  trajetRetour.LieuDArriverLibelle || trajetRetour.lieu_arrivee;
-
-                // Si ce trajet retour va de la destination vers l'origine, l'inclure dans le calcul
-                if (
-                  villeDepartRetour === villeArriveeAller &&
-                  villeArriveeRetour === villeDepartAller
-                ) {
-                  montantPassagerRetour += obtenirTarifTrajet(
-                    trajetRetour,
-                    passager.type_passager,
-                    passager.classe
-                  );
-                }
+            if (voyageRetourData && voyageRetourData.trajet) {
+              // Calculer le montant pour tous les trajets du voyage retour sélectionné
+              voyageRetourData.trajet.forEach((trajetRetour) => {
+                montantPassagerRetour += obtenirTarifTrajet(
+                  trajetRetour,
+                  passager.type_passager,
+                  passager.classe
+                );
               });
             }
 
@@ -1036,14 +1029,6 @@ export default function DetailVoyage() {
               "voyages",
               reservationForm.voyage_retour_id
             );
-
-            // Définir les villes pour le filtrage des trajets retour
-            const villeDepartAller =
-              premierTrajetAller.LieuDeDepartLibelle ||
-              premierTrajetAller.lieu_depart;
-            const villeArriveeAller =
-              dernierTrajetAller.LieuDArriverLibelle ||
-              dernierTrajetAller.lieu_arrivee;
 
             // Enregistrer la vente pour le retour
             const venteRetour = {
@@ -1062,22 +1047,8 @@ export default function DetailVoyage() {
               create_time: serverTimestamp(),
               statuts: "Payer",
               voyage_reference: voyageRetourRef,
-              trajet:
-                voyageRetourSelectionne.trajet?.filter((trajetRetour) => {
-                  const villeDepartRetour =
-                    trajetRetour.LieuDeDepartLibelle ||
-                    trajetRetour.lieu_depart;
-                  const villeArriveeRetour =
-                    trajetRetour.LieuDArriverLibelle ||
-                    trajetRetour.lieu_arrivee;
-
-                  // Retourner seulement les trajets qui correspondent à l'inverse des trajets aller sélectionnés
-                  return (
-                    villeDepartRetour === villeArriveeAller &&
-                    villeArriveeRetour === villeDepartAller
-                  );
-                }) || [],
-              client_reference: clientReference || "",
+              trajet: voyageRetourData?.trajet || [],
+              client_reference: doc(db, "clients", clientReference) || "",
               client_name: `${passager.prenom || ""} ${
                 passager.nom || ""
               }`.trim(),
@@ -1095,6 +1066,7 @@ export default function DetailVoyage() {
               billet_aller_reference: venteAllerDocRef.id, // Lien vers le billet aller
               createAt: serverTimestamp(),
               numero_billet: numeroBilletRetour,
+              id_vente: numeroBilletRetour,
             };
 
             // Nettoyer les valeurs undefined et null pour le retour

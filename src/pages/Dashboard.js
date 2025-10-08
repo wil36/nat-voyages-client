@@ -361,45 +361,8 @@ export default function Dashboard() {
   //TODO voir la transmission de la liste des voyages à la page détail voyage
   const handleRedirect = (voyage) => {
     try {
-      // Function to deeply clean objects of non-serializable properties
-      const cleanObject = (obj, depth = 0) => {
-        // Limite de profondeur pour éviter la récursion infinie
-        if (depth > 5) return {};
-
-        if (obj === null || obj === undefined) return obj;
-        if (
-          typeof obj === "string" ||
-          typeof obj === "number" ||
-          typeof obj === "boolean"
-        )
-          return obj;
-        if (Array.isArray(obj)) return obj.map(cleanObject);
-        if (typeof obj === "object") {
-          const cleaned = {};
-          for (const key in obj) {
-            const value = obj[key];
-            // Skip Firestore references and functions
-            if (
-              value &&
-              typeof value === "object" &&
-              value.constructor &&
-              (value.constructor.name === "DocumentReference" ||
-                value.constructor.name === "Timestamp" ||
-                typeof value === "function")
-            ) {
-              continue;
-            }
-            cleaned[key] = cleanObject(value, depth + 1);
-          }
-          return cleaned;
-        }
-        return obj;
-      };
-
-      const cleanVoyage = cleanObject(voyage);
-
       navigate(`/detail-voyage/${voyage.id}`, {
-        state: { voyage: cleanVoyage },
+        state: { voyageId: voyage.id },
       });
     } catch (err) {
       console.error("Navigation error:", err);

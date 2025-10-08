@@ -1247,7 +1247,7 @@ export default function DetailVoyage() {
       // Fallback: fetch from Firestore if no state passed
       const fetchVoyage = async () => {
         try {
-          const docRef = doc(db, "voyages", id);
+          const docRef = doc(db, "voyages", location.state.voyageId);
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
             setVoyage(docSnap.data());

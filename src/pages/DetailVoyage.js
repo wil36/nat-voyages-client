@@ -8,6 +8,7 @@ import {
   query,
   where,
   getDocs,
+  orderBy,
   serverTimestamp,
   runTransaction,
 } from "firebase/firestore";
@@ -51,6 +52,7 @@ export default function DetailVoyage() {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [voyagesRetour, setVoyagesRetour] = useState([]);
+  const [tousLesVoyages, setTousLesVoyages] = useState([]);
   const [loadingVoyagesRetour, setLoadingVoyagesRetour] = useState(false);
   const [voyageRetourSelectionne, setVoyageRetourSelectionne] = useState(null);
 
@@ -60,7 +62,6 @@ export default function DetailVoyage() {
 
   // Fonction pour récupérer les voyages de retour potentiels
   const recupererVoyagesRetour = async () => {
-    console.log(location.state.voyages);
     if (
       !voyage ||
       reservationForm.type_voyage !== "aller_retour" ||
@@ -72,23 +73,6 @@ export default function DetailVoyage() {
 
     setLoadingVoyagesRetour(true);
     try {
-      // Récupérer tous les voyages depuis l'état de navigation ou via une requête
-      let tousLesVoyages = [];
-
-      if (location.state && location.state.voyages) {
-        tousLesVoyages = location.state.voyages;
-      } else {
-        // Si pas de voyages en paramètre, faire une requête à Firestore
-        const voyagesQuery = query(collection(db, "voyages"));
-        const voyagesSnapshot = await getDocs(voyagesQuery);
-        tousLesVoyages = voyagesSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-      }
-
-      console.log("Tous les voyages disponibles:", tousLesVoyages);
-
       // Filtrer pour les voyages de retour potentiels
       const voyageAller = voyage;
 
@@ -114,12 +98,6 @@ export default function DetailVoyage() {
         (index) => voyageAller.trajet[index]
       );
 
-      console.log(
-        "Indices sélectionnés (non triés):",
-        reservationForm.trajets_selectionnes
-      );
-      console.log("Indices sélectionnés (triés):", indicesTriés);
-
       if (trajetsSelectionnes.length === 0) {
         setVoyagesRetour([]);
         return;
@@ -142,9 +120,6 @@ export default function DetailVoyage() {
 
       // La séquence retour est l'inverse de la séquence aller
       const sequenceVillesRetour = [...sequenceVillesAller].reverse();
-
-      console.log("Séquence aller:", sequenceVillesAller);
-      console.log("Séquence retour recherchée:", sequenceVillesRetour);
 
       const voyagesRetourFiltres = tousLesVoyages.filter((v) => {
         // Vérifier que ce n'est pas le même voyage
@@ -181,9 +156,6 @@ export default function DetailVoyage() {
           );
         });
 
-        console.log(`Voyage ${v.id} - Séquence:`, sequenceVoyageRetour);
-        console.log("Séquence retour recherchée:", sequenceVillesRetour);
-
         // Vérifier si la séquence du voyage candidat contient la séquence retour recherchée
         const containsReturnSequence = sequenceVillesRetour.every(
           (ville, index) => {
@@ -198,14 +170,9 @@ export default function DetailVoyage() {
           }
         );
 
-        console.log(
-          `Voyage ${v.id} - Contient séquence retour:`,
-          containsReturnSequence
-        );
         return containsReturnSequence;
       });
 
-      console.log("Voyages retour filtrés:", voyagesRetourFiltres);
       setVoyagesRetour(voyagesRetourFiltres);
     } catch (error) {
       console.error(
@@ -512,7 +479,6 @@ export default function DetailVoyage() {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
         doc.text("DETAILS DU VOYAGE", 20, 65);
-        console.log("vente", vente);
         // Extraire les villes de départ et d'arrivée uniquement du trajet de la vente
         const premierTrajet = vente.trajet?.[0];
         const dernierTrajet = vente.trajet?.[vente.trajet?.length - 1];
@@ -831,8 +797,6 @@ export default function DetailVoyage() {
     setIsSubmitting(true);
 
     try {
-      console.log("Début de l'enregistrement des billets...");
-
       // Vérifier la disponibilité des places en temps réel
       const { voyageData, placesNecessaires } = await verifierDisponibilite();
 
@@ -1298,6 +1262,56 @@ export default function DetailVoyage() {
       };
       fetchVoyage();
     }
+    const today = new Date();
+    const q = query(
+      collection(db, "voyages"),
+      where("date_voyage", ">=", today),
+      where("status", "==", "Actif"),
+      orderBy("date_voyage", "desc")
+    );
+
+    const querySnapshot = getDocs(q).then((querySnapshot) => {
+      const result = [];
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+
+        result.push({
+          id: doc.id,
+          referenceDoc: doc.ref.path,
+          libelle_bateau: data.libelle_bateau || "Inconnu",
+          bateau_reference: data.bateau_reference || "",
+          date_voyage: data.date_voyage
+            ? `${data.date_voyage
+                .toDate()
+                .toLocaleDateString()} ${data.date_voyage
+                .toDate()
+                .toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}`
+            : "",
+          statut: data.status,
+          montant: data.montant_ttc || 0,
+          agence_name: data.agence_name || "",
+          agence_reference: data.agence_reference || "",
+          chauffeur: data.chauffeur || "",
+          chauffeur_reference: data.chauffeur_reference || "",
+          hotesse1: data.hotesse1 || "",
+          hotesse1_reference: data.hotesse1_reference || "",
+          hotesse2: data.hotesse2 || "",
+          hotesse2_reference: data.hotesse2_reference || "",
+          mecanicien: data.mecanicien || "",
+          mecanicien_reference: data.mecanicien_reference || "",
+          place_disponible_eco: data.place_disponible_eco || 0,
+          place_disponible_vip: data.place_disponible_vip || 0,
+          place_prise_eco: data.place_prise_eco || 0,
+          place_prise_vip: data.place_prise_vip || 0,
+          trajet: data.trajet || [],
+        });
+      });
+      setTousLesVoyages(result);
+    });
   }, [id, location.state]);
 
   if (loading) {

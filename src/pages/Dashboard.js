@@ -397,10 +397,9 @@ export default function Dashboard() {
       };
 
       const cleanVoyage = cleanObject(voyage);
-      const cleanVoyages = originalVoyages.map(cleanObject);
 
       navigate(`/detail-voyage/${voyage.id}`, {
-        state: { voyage: cleanVoyage, voyages: cleanVoyages },
+        state: { voyage: cleanVoyage },
       });
     } catch (err) {
       console.error("Navigation error:", err);

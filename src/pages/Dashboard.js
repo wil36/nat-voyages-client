@@ -47,15 +47,8 @@ export default function Dashboard() {
         const dejaInclus = voyagesRecherche.some((v) => v.id === voyage.id);
         if (dejaInclus) return false;
 
-        // Vérifier si ce voyage a les mêmes lieux de départ/arrivée
-        const memesDepartArrivee = voyage.trajet?.some((etape) => {
-          return (
-            (!filters.depart ||
-              etape.LieuDeDepartReference?.id === filters.depart) &&
-            (!filters.arrivee ||
-              etape.LieuDArriverReference?.id === filters.arrivee)
-          );
-        });
+        // Vérifier si ce voyage a les mêmes lieux de départ/arrivée avec un chemin logique
+        const memesDepartArrivee = checkTrajetPath(voyage.trajet, filters.depart, filters.arrivee);
 
         return memesDepartArrivee;
       });
@@ -82,27 +75,6 @@ export default function Dashboard() {
     }
   };
 
-  // Update your fetchVoyages function to save the original voyages
-  const fetchVoyages = async () => {
-    if (!user) return;
-
-    try {
-      const q = query(collection(db, "voyages"));
-      const querySnapshot = await getDocs(q);
-      const result = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        referenceDoc: doc.ref.path,
-        ...doc.data(),
-      }));
-
-      setVoyages(result);
-      setOriginalVoyages(result); // Save the original list
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching voyages: ", error);
-      setLoading(false);
-    }
-  };
 
   // Add this reset function
   const resetVoyages = () => {
@@ -190,6 +162,67 @@ export default function Dashboard() {
     fetchVoyages();
   }, [user]);
 
+  // Fonction pour vérifier s'il existe un chemin logique dans le trajet
+  const checkTrajetPath = (trajet, departId, arriveeId) => {
+    if (!trajet || trajet.length === 0) return false;
+    
+    // Si aucun filtre de lieu, retourner true
+    if (!departId && !arriveeId) return true;
+    
+    // Si seulement le départ est spécifié
+    if (departId && !arriveeId) {
+      return trajet.some(etape => etape.LieuDeDepartReference?.id === departId);
+    }
+    
+    // Si seulement l'arrivée est spécifiée
+    if (!departId && arriveeId) {
+      return trajet.some(etape => etape.LieuDArriverReference?.id === arriveeId);
+    }
+    
+    // Si les deux sont spécifiés, vérifier le chemin logique
+    let departIndex = -1;
+    let arriveeIndex = -1;
+    
+    // Trouver l'index de l'étape où le lieu de départ apparaît
+    for (let i = 0; i < trajet.length; i++) {
+      if (trajet[i].LieuDeDepartReference?.id === departId) {
+        departIndex = i;
+        break;
+      }
+    }
+    
+    // Trouver l'index de l'étape où le lieu d'arrivée apparaît
+    for (let i = 0; i < trajet.length; i++) {
+      if (trajet[i].LieuDArriverReference?.id === arriveeId) {
+        arriveeIndex = i;
+        break;
+      }
+    }
+    
+    // Vérifications supplémentaires pour les points intermédiaires
+    // Un lieu peut être point d'arrivée d'une étape ET point de départ de la suivante
+    if (departIndex === -1) {
+      for (let i = 0; i < trajet.length; i++) {
+        if (trajet[i].LieuDArriverReference?.id === departId) {
+          departIndex = i;
+          break;
+        }
+      }
+    }
+    
+    if (arriveeIndex === -1) {
+      for (let i = 0; i < trajet.length; i++) {
+        if (trajet[i].LieuDeDepartReference?.id === arriveeId) {
+          arriveeIndex = i;
+          break;
+        }
+      }
+    }
+    
+    // Pour qu'un trajet soit valide, le départ doit apparaître avant ou à la même étape que l'arrivée
+    return departIndex !== -1 && arriveeIndex !== -1 && departIndex <= arriveeIndex;
+  };
+
   const handleSearch = (e) => {
     e.preventDefault();
 
@@ -220,22 +253,10 @@ export default function Dashboard() {
           }
         }
 
-        // Departure filter - check if departure location exists in trajet
-        if (filters.depart && matchesFilter) {
-          const hasDepart = voyage.trajet?.some((etape) => {
-            return etape.LieuDeDepartReference.id === filters.depart;
-          });
-          if (!hasDepart) {
-            matchesFilter = false;
-          }
-        }
-
-        // Arrival filter - check if arrival location exists in trajet
-        if (filters.arrivee && matchesFilter) {
-          const hasArrivee = voyage.trajet?.some(
-            (etape) => etape.LieuDArriverReference.id === filters.arrivee
-          );
-          if (!hasArrivee) {
+        // Departure and Arrival filter - check if there's a logical path
+        if ((filters.depart || filters.arrivee) && matchesFilter) {
+          const hasValidPath = checkTrajetPath(voyage.trajet, filters.depart, filters.arrivee);
+          if (!hasValidPath) {
             matchesFilter = false;
           }
         }

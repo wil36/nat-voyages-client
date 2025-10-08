@@ -349,11 +349,24 @@ export default function Dashboard() {
   const handleRedirect = (voyage) => {
     try {
       // Function to deeply clean objects of non-serializable properties
-      const cleanObject = (obj) => {
+      const cleanObject = (obj, visited = new WeakSet()) => {
         if (obj === null || obj === undefined) return obj;
         if (typeof obj === 'string' || typeof obj === 'number' || typeof obj === 'boolean') return obj;
-        if (Array.isArray(obj)) return obj.map(cleanObject);
+        
+        // Protection contre les références circulaires
+        if (typeof obj === 'object' && visited.has(obj)) {
+          return {};
+        }
+        
+        if (Array.isArray(obj)) {
+          visited.add(obj);
+          const result = obj.map(item => cleanObject(item, visited));
+          visited.delete(obj);
+          return result;
+        }
+        
         if (typeof obj === 'object') {
+          visited.add(obj);
           const cleaned = {};
           for (const key in obj) {
             const value = obj[key];
@@ -364,8 +377,9 @@ export default function Dashboard() {
                  typeof value === 'function')) {
               continue;
             }
-            cleaned[key] = cleanObject(value);
+            cleaned[key] = cleanObject(value, visited);
           }
+          visited.delete(obj);
           return cleaned;
         }
         return obj;

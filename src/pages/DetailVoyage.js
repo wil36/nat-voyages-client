@@ -806,36 +806,98 @@ export default function DetailVoyage() {
         ...reservationForm.passagers.filter((p) => p.type_passager === "Bébé"),
       ];
 
+      // Pré-traitement : vérifier tous les clients en dehors de la transaction
+      const clientsData = [];
+      for (const passager of passagersOrdonnes) {
+        const clientsQuery = query(
+          collection(db, "clients"),
+          where("type_piece", "==", passager.type_piece),
+          where("numero_piece", "==", passager.numero_piece)
+        );
+        const clientsSnapshot = await getDocs(clientsQuery);
+        clientsData.push({
+          passager,
+          existingClientId: clientsSnapshot.empty ? null : clientsSnapshot.docs[0].id
+        });
+      }
+
       // Utilisation d'une transaction atomique Firebase
       const result = await runTransaction(db, async (transaction) => {
         const ventes = [];
         const voyageRef = doc(db, "voyages", location.state.voyageId);
         let premierAdulteTicketId = null; // Pour les bébés
 
-        // 1. Mettre à jour les places prises dans le voyage
+        // 1. TOUTES LES LECTURES D'ABORD - Double vérification des places
+        const voyageDoc = await transaction.get(voyageRef);
+        if (!voyageDoc.exists()) {
+          throw new Error("Voyage introuvable");
+        }
+        
+        const currentVoyageData = voyageDoc.data();
+        let currentVoyageRetourData = null;
+        
+        // Lecture du voyage retour si nécessaire
+        if (reservationForm.type_voyage === "aller_retour" && reservationForm.voyage_retour_id) {
+          const voyageRetourRef = doc(db, "voyages", reservationForm.voyage_retour_id);
+          const voyageRetourDoc = await transaction.get(voyageRetourRef);
+          
+          if (!voyageRetourDoc.exists()) {
+            throw new Error("Voyage de retour introuvable");
+          }
+          currentVoyageRetourData = voyageRetourDoc.data();
+        }
+        
+        // Vérifications des places
+        const placesDispoEcoActuelles = (currentVoyageData.place_disponible_eco || 0) - (currentVoyageData.place_prise_eco || 0);
+        const placesDispoVipActuelles = (currentVoyageData.place_disponible_vip || 0) - (currentVoyageData.place_prise_vip || 0);
+        
+        if (placesNecessaires.Economie > placesDispoEcoActuelles) {
+          throw new Error(`Plus assez de places Économie disponibles (${placesNecessaires.Economie} demandées, ${placesDispoEcoActuelles} disponibles)`);
+        }
+        
+        if (placesNecessaires.VIP > placesDispoVipActuelles) {
+          throw new Error(`Plus assez de places VIP disponibles (${placesNecessaires.VIP} demandées, ${placesDispoVipActuelles} disponibles)`);
+        }
+
+        // Vérifications pour le voyage retour
+        if (currentVoyageRetourData) {
+          const placesDispoEcoRetour = (currentVoyageRetourData.place_disponible_eco || 0) - (currentVoyageRetourData.place_prise_eco || 0);
+          const placesDispoVipRetour = (currentVoyageRetourData.place_disponible_vip || 0) - (currentVoyageRetourData.place_prise_vip || 0);
+          
+          if (placesNecessaires.Economie > placesDispoEcoRetour) {
+            throw new Error(`Plus assez de places Économie pour le retour (${placesNecessaires.Economie} demandées, ${placesDispoEcoRetour} disponibles)`);
+          }
+          
+          if (placesNecessaires.VIP > placesDispoVipRetour) {
+            throw new Error(`Plus assez de places VIP pour le retour (${placesNecessaires.VIP} demandées, ${placesDispoVipRetour} disponibles)`);
+          }
+        }
+
+        // 2. TOUTES LES ÉCRITURES ENSUITE - Mettre à jour les places
         transaction.update(voyageRef, {
           place_prise_eco:
-            (voyageData.place_prise_eco || 0) + placesNecessaires.Economie,
+            (currentVoyageData.place_prise_eco || 0) + placesNecessaires.Economie,
           place_prise_vip:
-            (voyageData.place_prise_vip || 0) + placesNecessaires.VIP,
+            (currentVoyageData.place_prise_vip || 0) + placesNecessaires.VIP,
         });
 
-        // 2. Traiter chaque passager dans l'ordre
-        for (const passager of passagersOrdonnes) {
-          // Vérifier/créer le client
-          let clientReference = null;
-          const clientsQuery = query(
-            collection(db, "clients"),
-            where("type_piece", "==", passager.type_piece),
-            where("numero_piece", "==", passager.numero_piece)
-          );
+        // Mettre à jour le voyage retour si nécessaire
+        if (currentVoyageRetourData) {
+          const voyageRetourRef = doc(db, "voyages", reservationForm.voyage_retour_id);
+          transaction.update(voyageRetourRef, {
+            place_prise_eco:
+              (currentVoyageRetourData.place_prise_eco || 0) + placesNecessaires.Economie,
+            place_prise_vip:
+              (currentVoyageRetourData.place_prise_vip || 0) + placesNecessaires.VIP,
+          });
+        }
 
-          const clientsSnapshot = await getDocs(clientsQuery);
+        // 3. Traiter chaque passager dans l'ordre
+        for (const clientData of clientsData) {
+          const passager = clientData.passager;
+          let clientReference = clientData.existingClientId;
 
-          if (!clientsSnapshot.empty) {
-            // Client existe déjà
-            clientReference = clientsSnapshot.docs[0].id;
-          } else {
+          if (!clientReference) {
             // Créer nouveau client
             const nouveauClient = {
               nom: passager.nom,

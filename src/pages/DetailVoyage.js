@@ -743,7 +743,7 @@ export default function DetailVoyage() {
 
   // Fonction pour vérifier la disponibilité des places pour tous les passagers
   const verifierDisponibilite = async () => {
-    const voyageRef = doc(db, "voyages", voyage.id);
+    const voyageRef = doc(db, "voyages", location.state.voyageId);
     const voyageSnapshot = await getDoc(voyageRef);
 
     if (!voyageSnapshot.exists()) {
@@ -809,7 +809,7 @@ export default function DetailVoyage() {
       // Utilisation d'une transaction atomique Firebase
       const result = await runTransaction(db, async (transaction) => {
         const ventes = [];
-        const voyageRef = doc(db, "voyages", voyage.id);
+        const voyageRef = doc(db, "voyages", location.state.voyageId);
         let premierAdulteTicketId = null; // Pour les bébés
 
         // 1. Mettre à jour les places prises dans le voyage
@@ -1248,12 +1248,23 @@ export default function DetailVoyage() {
           if (docSnap.exists()) {
             const data = docSnap.data();
             // Formater la date si c'est un Timestamp Firestore
-            if (data.date_voyage && typeof data.date_voyage === 'object' && data.date_voyage.seconds) {
-              data.date_voyage = new Date(data.date_voyage.seconds * 1000).toLocaleDateString('fr-FR') + ' ' + 
-                                 new Date(data.date_voyage.seconds * 1000).toLocaleTimeString('fr-FR', {
-                                   hour: '2-digit',
-                                   minute: '2-digit'
-                                 });
+            if (
+              data.date_voyage &&
+              typeof data.date_voyage === "object" &&
+              data.date_voyage.seconds
+            ) {
+              data.date_voyage =
+                new Date(data.date_voyage.seconds * 1000).toLocaleDateString(
+                  "fr-FR"
+                ) +
+                " " +
+                new Date(data.date_voyage.seconds * 1000).toLocaleTimeString(
+                  "fr-FR",
+                  {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }
+                );
             }
             setVoyage(data);
           } else {

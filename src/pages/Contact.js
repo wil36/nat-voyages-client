@@ -34,7 +34,7 @@ export default function Contact() {
                           </h5>
                         </div>
                         <div className="row g-3">
-                          <div className="col-12">
+                          {/* <div className="col-12">
                             <div className="contact-item">
                               <div className="contact-icon">
                                 <em className="icon ni ni-map-pin"></em>
@@ -59,7 +59,7 @@ export default function Contact() {
                                 <p>+33 1 23 45 67 89</p>
                               </div>
                             </div>
-                          </div>
+                          </div> */}
                           <div className="col-12">
                             <div className="contact-item">
                               <div className="contact-icon">
@@ -67,11 +67,11 @@ export default function Contact() {
                               </div>
                               <div className="contact-text">
                                 <h6>Email</h6>
-                                <p>contact@nat-voyages.com</p>
+                                <p><a href="mailto:contact.natvoyage@gmail.com">contact.natvoyage@gmail.com</a></p>
                               </div>
                             </div>
                           </div>
-                          <div className="col-12">
+                          {/* <div className="col-12">
                             <div className="contact-item">
                               <div className="contact-icon">
                                 <em className="icon ni ni-clock"></em>
@@ -85,12 +85,12 @@ export default function Contact() {
                                 </p>
                               </div>
                             </div>
-                          </div>
+                          </div> */}
                         </div>
                       </div>
                     </div>
 
-                    <div className="card">
+                    {/* <div className="card">
                       <div className="card-inner">
                         <div className="card-head">
                           <h5 className="card-title">Suivez-nous</h5>
@@ -120,7 +120,7 @@ export default function Contact() {
                           </ul>
                         </div>
                       </div>
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               </div>

@@ -817,7 +817,9 @@ export default function DetailVoyage() {
         const clientsSnapshot = await getDocs(clientsQuery);
         clientsData.push({
           passager,
-          existingClientId: clientsSnapshot.empty ? null : clientsSnapshot.docs[0].id
+          existingClientId: clientsSnapshot.empty
+            ? null
+            : clientsSnapshot.docs[0].id,
         });
       }
 
@@ -832,63 +834,93 @@ export default function DetailVoyage() {
         if (!voyageDoc.exists()) {
           throw new Error("Voyage introuvable");
         }
-        
+
         const currentVoyageData = voyageDoc.data();
         let currentVoyageRetourData = null;
-        
+
         // Lecture du voyage retour si nécessaire
-        if (reservationForm.type_voyage === "aller_retour" && reservationForm.voyage_retour_id) {
-          const voyageRetourRef = doc(db, "voyages", reservationForm.voyage_retour_id);
+        if (
+          reservationForm.type_voyage === "aller_retour" &&
+          reservationForm.voyage_retour_id
+        ) {
+          const voyageRetourRef = doc(
+            db,
+            "voyages",
+            reservationForm.voyage_retour_id
+          );
           const voyageRetourDoc = await transaction.get(voyageRetourRef);
-          
+
           if (!voyageRetourDoc.exists()) {
             throw new Error("Voyage de retour introuvable");
           }
           currentVoyageRetourData = voyageRetourDoc.data();
         }
-        
+
         // Vérifications des places
-        const placesDispoEcoActuelles = (currentVoyageData.place_disponible_eco || 0) - (currentVoyageData.place_prise_eco || 0);
-        const placesDispoVipActuelles = (currentVoyageData.place_disponible_vip || 0) - (currentVoyageData.place_prise_vip || 0);
-        
+        const placesDispoEcoActuelles =
+          (currentVoyageData.place_disponible_eco || 0) -
+          (currentVoyageData.place_prise_eco || 0);
+        const placesDispoVipActuelles =
+          (currentVoyageData.place_disponible_vip || 0) -
+          (currentVoyageData.place_prise_vip || 0);
+
         if (placesNecessaires.Economie > placesDispoEcoActuelles) {
-          throw new Error(`Plus assez de places Économie disponibles (${placesNecessaires.Economie} demandées, ${placesDispoEcoActuelles} disponibles)`);
+          throw new Error(
+            `Plus assez de places Économie disponibles (${placesNecessaires.Economie} demandées, ${placesDispoEcoActuelles} disponibles)`
+          );
         }
-        
+
         if (placesNecessaires.VIP > placesDispoVipActuelles) {
-          throw new Error(`Plus assez de places VIP disponibles (${placesNecessaires.VIP} demandées, ${placesDispoVipActuelles} disponibles)`);
+          throw new Error(
+            `Plus assez de places VIP disponibles (${placesNecessaires.VIP} demandées, ${placesDispoVipActuelles} disponibles)`
+          );
         }
 
         // Vérifications pour le voyage retour
         if (currentVoyageRetourData) {
-          const placesDispoEcoRetour = (currentVoyageRetourData.place_disponible_eco || 0) - (currentVoyageRetourData.place_prise_eco || 0);
-          const placesDispoVipRetour = (currentVoyageRetourData.place_disponible_vip || 0) - (currentVoyageRetourData.place_prise_vip || 0);
-          
+          const placesDispoEcoRetour =
+            (currentVoyageRetourData.place_disponible_eco || 0) -
+            (currentVoyageRetourData.place_prise_eco || 0);
+          const placesDispoVipRetour =
+            (currentVoyageRetourData.place_disponible_vip || 0) -
+            (currentVoyageRetourData.place_prise_vip || 0);
+
           if (placesNecessaires.Economie > placesDispoEcoRetour) {
-            throw new Error(`Plus assez de places Économie pour le retour (${placesNecessaires.Economie} demandées, ${placesDispoEcoRetour} disponibles)`);
+            throw new Error(
+              `Plus assez de places Économie pour le retour (${placesNecessaires.Economie} demandées, ${placesDispoEcoRetour} disponibles)`
+            );
           }
-          
+
           if (placesNecessaires.VIP > placesDispoVipRetour) {
-            throw new Error(`Plus assez de places VIP pour le retour (${placesNecessaires.VIP} demandées, ${placesDispoVipRetour} disponibles)`);
+            throw new Error(
+              `Plus assez de places VIP pour le retour (${placesNecessaires.VIP} demandées, ${placesDispoVipRetour} disponibles)`
+            );
           }
         }
 
         // 2. TOUTES LES ÉCRITURES ENSUITE - Mettre à jour les places
         transaction.update(voyageRef, {
           place_prise_eco:
-            (currentVoyageData.place_prise_eco || 0) + placesNecessaires.Economie,
+            (currentVoyageData.place_prise_eco || 0) +
+            placesNecessaires.Economie,
           place_prise_vip:
             (currentVoyageData.place_prise_vip || 0) + placesNecessaires.VIP,
         });
 
         // Mettre à jour le voyage retour si nécessaire
         if (currentVoyageRetourData) {
-          const voyageRetourRef = doc(db, "voyages", reservationForm.voyage_retour_id);
+          const voyageRetourRef = doc(
+            db,
+            "voyages",
+            reservationForm.voyage_retour_id
+          );
           transaction.update(voyageRetourRef, {
             place_prise_eco:
-              (currentVoyageRetourData.place_prise_eco || 0) + placesNecessaires.Economie,
+              (currentVoyageRetourData.place_prise_eco || 0) +
+              placesNecessaires.Economie,
             place_prise_vip:
-              (currentVoyageRetourData.place_prise_vip || 0) + placesNecessaires.VIP,
+              (currentVoyageRetourData.place_prise_vip || 0) +
+              placesNecessaires.VIP,
           });
         }
 
@@ -958,7 +990,12 @@ export default function DetailVoyage() {
           const numeroBilletAller =
             Date.now().toString() +
             Math.random().toString(36).substring(2, 7).toUpperCase();
-
+          //TODO: Les trajets sélectionnés contiennent des valeurs vides
+          (reservationForm.trajets_selectionnes || []).map((index) =>
+            voyage?.trajet && voyage.trajet[index]
+              ? console.log(voyage.trajet[index])
+              : console.log("Trajet non trouvé")
+          );
           // Enregistrer la vente pour l'aller
           const venteAller = {
             noms: passager.nom || "",
@@ -974,18 +1011,18 @@ export default function DetailVoyage() {
                 : "",
             classe: passager.classe || "",
             create_time: serverTimestamp(),
-            statuts: "Payer",
+            status: "Payer",
             voyage_reference: voyageRef,
             trajet: (reservationForm.trajets_selectionnes || []).map((index) =>
               voyage?.trajet && voyage.trajet[index] ? voyage.trajet[index] : {}
             ),
-            client_reference: clientReference || "",
+            client_reference: doc(db, "clients", clientReference) || "",
             client_name: `${passager.prenom || ""} ${
               passager.nom || ""
             }`.trim(),
             type_paiement: "Mobile Money",
-            agent_reference: "",
-            agent_name: "",
+            agent_reference: doc(db, "users", "u8Eye0rIVa0gG15xwF8m") || "",
+            agent_name: "Nat Voyage System",
             sexe_client: passager.sexe || "",
             isGo: false,
             is_client_reservation: true,
@@ -1099,6 +1136,8 @@ export default function DetailVoyage() {
               "voyages",
               reservationForm.voyage_retour_id
             );
+            console.log(voyageRetourSelectionne?.trajet);
+            //TODO: Les trajets sélectionnés contiennent des valeurs vides
 
             // Enregistrer la vente pour le retour
             const venteRetour = {
@@ -1115,7 +1154,7 @@ export default function DetailVoyage() {
                   : "",
               classe: passager.classe || "",
               create_time: serverTimestamp(),
-              statuts: "Payer",
+              status: "Payer",
               voyage_reference: voyageRetourRef,
               trajet: voyageRetourSelectionne?.trajet || [],
               client_reference: doc(db, "clients", clientReference) || "",
@@ -1123,8 +1162,8 @@ export default function DetailVoyage() {
                 passager.nom || ""
               }`.trim(),
               type_paiement: "Mobile Money",
-              agent_reference: "",
-              agent_name: "",
+              agent_reference: doc(db, "users", "u8Eye0rIVa0gG15xwF8m") || "",
+              agent_name: "Nat Voyage System",
               sexe_client: passager.sexe || "",
               isGo: false,
               is_client_reservation: true,

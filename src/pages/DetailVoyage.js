@@ -1757,6 +1757,54 @@ export default function DetailVoyage() {
             </div>
             <div className="modal-body">
               <form onSubmit={handleTicketSubmit}>
+                {/* Sélection des trajets (commun à tous) */}
+                <div className="form-group mb-4">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <label className="form-label h6">
+                      Sélectionner les trajets (commun à tous les passagers)
+                    </label>
+                  </div>
+                  <div className="border rounded p-3 bg-light">
+                    {voyage?.trajet && voyage.trajet.length > 0 ? (
+                      voyage.trajet.map((etape, index) => (
+                        <div
+                          key={index}
+                          className="custom-control custom-checkbox mb-2 col-md-12"
+                        >
+                          <input
+                            type="checkbox"
+                            className="custom-control-input"
+                            id={`trajet_${index}`}
+                            checked={reservationForm.trajets_selectionnes.includes(
+                              index
+                            )}
+                            onChange={(e) =>
+                              mettreAJourTrajets(index, e.target.checked)
+                            }
+                          />
+                          <label
+                            className="custom-control-label"
+                            htmlFor={`trajet_${index}`}
+                          >
+                            <strong>{etape.LieuDeDepartLibelle}</strong>
+                            <em className="icon ni ni-arrow-right mx-2"></em>
+                            <strong>{etape.LieuDArriverLibelle}</strong>
+                            {etape.heure_depart && (
+                              <small className="text-muted ml-2">
+                                (Départ: {etape.heure_depart})
+                              </small>
+                            )}
+                          </label>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-muted">Aucun trajet disponible</p>
+                    )}
+                  </div>
+                  {errors.trajets && (
+                    <small className="text-danger">{errors.trajets}</small>
+                  )}
+                </div>
                 {/* Type de voyage */}
                 <div className="form-group mb-4">
                   <label className="form-label h6">Type de voyage</label>
@@ -1924,55 +1972,6 @@ export default function DetailVoyage() {
                   </div>
                 </div>
 
-                {/* Sélection des trajets (commun à tous) */}
-                <div className="form-group mb-4">
-                  <div className="d-flex justify-content-between align-items-center mb-2">
-                    <label className="form-label h6">
-                      Sélectionner les trajets (commun à tous les passagers)
-                    </label>
-                  </div>
-                  <div className="border rounded p-3 bg-light">
-                    {voyage?.trajet && voyage.trajet.length > 0 ? (
-                      voyage.trajet.map((etape, index) => (
-                        <div
-                          key={index}
-                          className="custom-control custom-checkbox mb-2 col-md-12"
-                        >
-                          <input
-                            type="checkbox"
-                            className="custom-control-input"
-                            id={`trajet_${index}`}
-                            checked={reservationForm.trajets_selectionnes.includes(
-                              index
-                            )}
-                            onChange={(e) =>
-                              mettreAJourTrajets(index, e.target.checked)
-                            }
-                          />
-                          <label
-                            className="custom-control-label"
-                            htmlFor={`trajet_${index}`}
-                          >
-                            <strong>{etape.LieuDeDepartLibelle}</strong>
-                            <em className="icon ni ni-arrow-right mx-2"></em>
-                            <strong>{etape.LieuDArriverLibelle}</strong>
-                            {etape.heure_depart && (
-                              <small className="text-muted ml-2">
-                                (Départ: {etape.heure_depart})
-                              </small>
-                            )}
-                          </label>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-muted">Aucun trajet disponible</p>
-                    )}
-                  </div>
-                  {errors.trajets && (
-                    <small className="text-danger">{errors.trajets}</small>
-                  )}
-                </div>
-
                 {/* Section des passagers */}
                 <div className="form-group mb-4">
                   <div className="d-flex justify-content-between align-items-center mb-3">
@@ -2003,6 +2002,7 @@ export default function DetailVoyage() {
                           )}
                         </div>
                       </div>
+
                       <div className="card-body">
                         {/* Type et classe */}
                         <div className="row mb-3">

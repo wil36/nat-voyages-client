@@ -1757,6 +1757,57 @@ export default function DetailVoyage() {
             </div>
             <div className="modal-body">
               <form onSubmit={handleTicketSubmit}>
+                {/* Informations sur le voyage */}
+                <div className="row mb-4">
+                  <div className="col-md-4">
+                    <div className="card bg-light">
+                      <div className="card-body">
+                        <h6 className="card-title">Places disponibles</h6>
+                        <p className="mb-1">
+                          Économique:{" "}
+                          {Math.max(
+                            0,
+                            (voyage?.place_disponible_eco || 0) -
+                              (voyage?.place_prise_eco || 0)
+                          )}
+                        </p>
+                        <p className="mb-0">
+                          VIP:{" "}
+                          {Math.max(
+                            0,
+                            (voyage?.place_disponible_vip || 0) -
+                              (voyage?.place_prise_vip || 0)
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-md-4">
+                    <div className="card bg-info text-white">
+                      <div className="card-body">
+                        <h6 className="card-title">Passagers</h6>
+                        <h4 className="mb-0">
+                          {reservationForm.passagers.length}
+                        </h4>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-md-4">
+                    <div className="card bg-primary text-white">
+                      <div className="card-body">
+                        <h6 className="card-title">Montant total</h6>
+                        <h4 className="mb-0">
+                          {montantTotal.toLocaleString()} FCFA
+                        </h4>
+                        {reservationForm.type_voyage === "aller_retour" && (
+                          <small className="text-white-50">
+                            Aller + Retour inclus
+                          </small>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 {/* Sélection des trajets (commun à tous) */}
                 <div className="form-group mb-4">
                   <div className="d-flex justify-content-between align-items-center mb-2">
@@ -1919,58 +1970,6 @@ export default function DetailVoyage() {
                     )}
                   </div>
                 )}
-
-                {/* Informations sur le voyage */}
-                <div className="row mb-4">
-                  <div className="col-md-4">
-                    <div className="card bg-light">
-                      <div className="card-body">
-                        <h6 className="card-title">Places disponibles</h6>
-                        <p className="mb-1">
-                          Économique:{" "}
-                          {Math.max(
-                            0,
-                            (voyage?.place_disponible_eco || 0) -
-                              (voyage?.place_prise_eco || 0)
-                          )}
-                        </p>
-                        <p className="mb-0">
-                          VIP:{" "}
-                          {Math.max(
-                            0,
-                            (voyage?.place_disponible_vip || 0) -
-                              (voyage?.place_prise_vip || 0)
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col-md-4">
-                    <div className="card bg-info text-white">
-                      <div className="card-body">
-                        <h6 className="card-title">Passagers</h6>
-                        <h4 className="mb-0">
-                          {reservationForm.passagers.length}
-                        </h4>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col-md-4">
-                    <div className="card bg-primary text-white">
-                      <div className="card-body">
-                        <h6 className="card-title">Montant total</h6>
-                        <h4 className="mb-0">
-                          {montantTotal.toLocaleString()} FCFA
-                        </h4>
-                        {reservationForm.type_voyage === "aller_retour" && (
-                          <small className="text-white-50">
-                            Aller + Retour inclus
-                          </small>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
 
                 {/* Section des passagers */}
                 <div className="form-group mb-4">

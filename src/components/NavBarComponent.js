@@ -55,12 +55,13 @@ export default function NavBarComponent() {
             <Link to="/" className="logo-link">
               <img
                 className="logo-light logo-img"
-                src={`${process.env.PUBLIC_URL}/assets/images/logo.png`}
+                src={`${process.env.PUBLIC_URL}/assets/images/logoNat.png`}
+                height={50}
                 alt="logo"
               />
               <img
                 className="logo-dark logo-img"
-                src={`${process.env.PUBLIC_URL}/assets/images/logo-dark.png`}
+                src={`${process.env.PUBLIC_URL}/assets/images/logoNat.png`}
                 alt="logo-dark"
               />
             </Link>

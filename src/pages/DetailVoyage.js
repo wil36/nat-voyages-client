@@ -493,7 +493,7 @@ export default function DetailVoyage() {
 
         doc.text(`Ville de départ : ${villeDepart}`, 20, 72);
         doc.text(`Ville d'arrivée : ${villeArrivee}`, 20, 78);
-        doc.text(`Date de voyage : ${voyage?.date_voyage || "N/A"}`, 20, 84);
+        doc.text(`Date de voyage : ${vente?.date_voyage || "N/A"}`, 20, 84);
         doc.text("Franchise de bagage : 20kgs", 20, 90);
 
         // Réservation
@@ -1002,6 +1002,7 @@ export default function DetailVoyage() {
             prenoms: passager.prenom || "",
             adresse: passager.adresse || "",
             tel: passager.telephone || "",
+            date_voyage: voyage.date_voyage || "",
             numero: passager.numero_piece || "",
             type_piece: passager.type_piece || "",
             montant_ttc: montantPassagerAller || 0,
@@ -1028,6 +1029,9 @@ export default function DetailVoyage() {
             is_client_reservation: true,
             agence_reference: voyage?.agence_reference || "",
             agence_name: voyage?.agence_name || "",
+            agence_vente_reference:
+              doc(db, "agences", "cvnjkcnezjncjekzncjkezncjkeznjckez") || "",
+            agence_vente_name: "Nat Voyage System",
             type_passager: passager.type_passager || "",
             type_voyage: reservationForm.type_voyage,
             sens_voyage: "aller", // Nouveau champ pour identifier le sens
@@ -1155,6 +1159,7 @@ export default function DetailVoyage() {
               classe: passager.classe || "",
               create_time: serverTimestamp(),
               status: "Payer",
+              date_voyage: voyageRetourSelectionne.date_voyage || "",
               voyage_reference: voyageRetourRef,
               trajet: voyageRetourSelectionne?.trajet || [],
               client_reference: doc(db, "clients", clientReference) || "",
@@ -1164,6 +1169,9 @@ export default function DetailVoyage() {
               type_paiement: "Mobile Money",
               agent_reference: doc(db, "users", "u8Eye0rIVa0gG15xwF8m") || "",
               agent_name: "Nat Voyage System",
+              agence_vente_reference:
+                doc(db, "agences", "cvnjkcnezjncjekzncjkezncjkeznjckez") || "",
+              agence_vente_name: "Nat Voyage System",
               sexe_client: passager.sexe || "",
               isGo: false,
               is_client_reservation: true,

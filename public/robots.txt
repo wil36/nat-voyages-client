@@ -1,3 +1,12 @@
-# https://www.robotstxt.org/robotstxt.html
+# robots.txt pour Nat Voyages
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /admin/
+Disallow: /login
+Disallow: /profil-user
+
+# Sitemap
+Sitemap: https://www.natvoyages.ga/sitemap.xml
+
+# Crawl-delay pour éviter la surcharge
+Crawl-delay: 10

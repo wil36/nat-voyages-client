@@ -48,20 +48,41 @@ export default function NavBarComponent() {
             justifyContent: "space-between",
             alignItems: "center",
             flexWrap: "wrap",
-            minHeight: "60px",
+            // minHeight: "80px",
+            // padding: "15px 0",
           }}
         >
-          <div className="nk-header-brand">
-            <Link to="/" className="logo-link">
+          <div
+            className="nk-header-brand"
+            style={{ position: "relative", zIndex: 10 }}
+          >
+            <Link
+              to="/"
+              className="logo-link"
+              style={{ display: "block", lineHeight: 0 }}
+            >
               <img
                 className="logo-light logo-img"
                 src={`${process.env.PUBLIC_URL}/assets/images/logoNat.png`}
-                height={50}
+                style={{
+                  height: "100px",
+                  width: "auto",
+                  maxHeight: "none",
+                  maxWidth: "none",
+                  objectFit: "contain",
+                }}
                 alt="logo"
               />
               <img
                 className="logo-dark logo-img"
                 src={`${process.env.PUBLIC_URL}/assets/images/logoNat.png`}
+                style={{
+                  height: "100px",
+                  width: "auto",
+                  maxHeight: "none",
+                  maxWidth: "none",
+                  objectFit: "contain",
+                }}
                 alt="logo-dark"
               />
             </Link>

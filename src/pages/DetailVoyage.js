@@ -22,6 +22,7 @@ import FooterComponent from "../components/FooterComponent";
 
 export default function DetailVoyage() {
   const [voyage, setVoyage] = useState(null);
+  const [voyageTimestamp, setVoyageTimestamp] = useState(null); // Timestamp original pour Firestore
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
@@ -491,9 +492,20 @@ export default function DetailVoyage() {
           dernierTrajet?.lieu_arrivee ||
           "N/A";
 
+        // Formater la date de voyage
+        let dateVoyageFormatee = "N/A";
+        if (vente?.date_voyage) {
+          if (vente.date_voyage instanceof Date) {
+            dateVoyageFormatee = vente.date_voyage.toLocaleDateString("fr-FR") + " " +
+                                 vente.date_voyage.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+          } else if (typeof vente.date_voyage === "string") {
+            dateVoyageFormatee = vente.date_voyage;
+          }
+        }
+
         doc.text(`Ville de départ : ${villeDepart}`, 20, 72);
         doc.text(`Ville d'arrivée : ${villeArrivee}`, 20, 78);
-        doc.text(`Date de voyage : ${vente?.date_voyage || "N/A"}`, 20, 84);
+        doc.text(`Date de voyage : ${dateVoyageFormatee}`, 20, 84);
         doc.text("Franchise de bagage : 20kgs", 20, 90);
 
         // Réservation
@@ -997,12 +1009,20 @@ export default function DetailVoyage() {
               : console.log("Trajet non trouvé")
           );
           // Enregistrer la vente pour l'aller
+          // Convertir le Timestamp Firestore en objet Date JavaScript
+          let dateVoyageAller = new Date();
+          if (voyageTimestamp && voyageTimestamp.toDate) {
+            dateVoyageAller = voyageTimestamp.toDate();
+          } else if (voyageTimestamp && voyageTimestamp.seconds) {
+            dateVoyageAller = new Date(voyageTimestamp.seconds * 1000);
+          }
+
           const venteAller = {
             noms: passager.nom || "",
             prenoms: passager.prenom || "",
             adresse: passager.adresse || "",
             tel: passager.telephone || "",
-            date_voyage: voyage.date_voyage || "",
+            date_voyage: dateVoyageAller,
             numero: passager.numero_piece || "",
             type_piece: passager.type_piece || "",
             montant_ttc: montantPassagerAller || 0,
@@ -1056,7 +1076,31 @@ export default function DetailVoyage() {
               venteAller[key] = venteAller[key].map((trajetItem) => {
                 const cleanedTrajet = {};
                 Object.keys(trajetItem).forEach((trajetKey) => {
-                  cleanedTrajet[trajetKey] = trajetItem[trajetKey] || "";
+                  // Champs qui doivent être des nombres
+                  const numericFields = [
+                    "tarif_adulte",
+                    "tarif_adulte_vip",
+                    "tarif_enfant",
+                    "tarif_enfant_vip",
+                    "tarif_bb",
+                    "tarif_bb_vip",
+                    "tva",
+                    "oprag",
+                    "promotion"
+                  ];
+
+                  if (numericFields.includes(trajetKey)) {
+                    // Convertir en nombre ou 0 si vide/invalide
+                    const value = trajetItem[trajetKey];
+                    if (value === "" || value === null || value === undefined) {
+                      cleanedTrajet[trajetKey] = 0;
+                    } else {
+                      const parsed = parseFloat(value);
+                      cleanedTrajet[trajetKey] = isNaN(parsed) ? 0 : parsed;
+                    }
+                  } else {
+                    cleanedTrajet[trajetKey] = trajetItem[trajetKey] || "";
+                  }
                 });
                 return cleanedTrajet;
               });
@@ -1143,6 +1187,15 @@ export default function DetailVoyage() {
             console.log(voyageRetourSelectionne?.trajet);
             //TODO: Les trajets sélectionnés contiennent des valeurs vides
 
+            // Convertir le Timestamp Firestore du voyage retour en objet Date JavaScript
+            let dateVoyageRetour = new Date();
+            const timestampRetour = voyageRetourSelectionne.date_voyage_timestamp;
+            if (timestampRetour && timestampRetour.toDate) {
+              dateVoyageRetour = timestampRetour.toDate();
+            } else if (timestampRetour && timestampRetour.seconds) {
+              dateVoyageRetour = new Date(timestampRetour.seconds * 1000);
+            }
+
             // Enregistrer la vente pour le retour
             const venteRetour = {
               noms: passager.nom || "",
@@ -1159,7 +1212,7 @@ export default function DetailVoyage() {
               classe: passager.classe || "",
               create_time: serverTimestamp(),
               status: "Payer",
-              date_voyage: voyageRetourSelectionne.date_voyage || "",
+              date_voyage: dateVoyageRetour,
               voyage_reference: voyageRetourRef,
               trajet: voyageRetourSelectionne?.trajet || [],
               client_reference: doc(db, "clients", clientReference) || "",
@@ -1202,7 +1255,31 @@ export default function DetailVoyage() {
                 venteRetour[key] = venteRetour[key].map((trajetItem) => {
                   const cleanedTrajet = {};
                   Object.keys(trajetItem).forEach((trajetKey) => {
-                    cleanedTrajet[trajetKey] = trajetItem[trajetKey] || "";
+                    // Champs qui doivent être des nombres
+                    const numericFields = [
+                      "tarif_adulte",
+                      "tarif_adulte_vip",
+                      "tarif_enfant",
+                      "tarif_enfant_vip",
+                      "tarif_bb",
+                      "tarif_bb_vip",
+                      "tva",
+                      "oprag",
+                      "promotion"
+                    ];
+
+                    if (numericFields.includes(trajetKey)) {
+                      // Convertir en nombre ou 0 si vide/invalide
+                      const value = trajetItem[trajetKey];
+                      if (value === "" || value === null || value === undefined) {
+                        cleanedTrajet[trajetKey] = 0;
+                      } else {
+                        const parsed = parseFloat(value);
+                        cleanedTrajet[trajetKey] = isNaN(parsed) ? 0 : parsed;
+                      }
+                    } else {
+                      cleanedTrajet[trajetKey] = trajetItem[trajetKey] || "";
+                    }
                   });
                   return cleanedTrajet;
                 });
@@ -1356,12 +1433,19 @@ export default function DetailVoyage() {
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
             const data = docSnap.data();
+            // Conserver le timestamp original pour l'enregistrement Firestore
+            let originalTimestamp = null;
+
             // Formater la date si c'est un Timestamp Firestore
             if (
               data.date_voyage &&
               typeof data.date_voyage === "object" &&
               data.date_voyage.seconds
             ) {
+              // Sauvegarder le timestamp original
+              originalTimestamp = data.date_voyage;
+
+              // Formater pour l'affichage
               data.date_voyage =
                 new Date(data.date_voyage.seconds * 1000).toLocaleDateString(
                   "fr-FR"
@@ -1376,6 +1460,7 @@ export default function DetailVoyage() {
                 );
             }
             setVoyage(data);
+            setVoyageTimestamp(originalTimestamp);
           } else {
             // console.log("No such document!");
           }
@@ -1406,6 +1491,7 @@ export default function DetailVoyage() {
           referenceDoc: doc.ref.path,
           libelle_bateau: data.libelle_bateau || "Inconnu",
           bateau_reference: data.bateau_reference || "",
+          date_voyage_timestamp: data.date_voyage || null, // Timestamp original pour Firestore
           date_voyage: data.date_voyage
             ? `${data.date_voyage
                 .toDate()

@@ -328,7 +328,10 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchLieux = async () => {
       try {
-        const q = query(collection(db, "lieux"));
+        const q = query(
+          collection(db, "lieux"),
+          where("statut", "==", "active")
+        );
         const querySnapshot = await getDocs(q);
         const lieuxList = querySnapshot.docs.map((doc) => ({
           id: doc.id,

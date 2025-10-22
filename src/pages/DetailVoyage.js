@@ -293,7 +293,7 @@ export default function DetailVoyage() {
     // Titre principal
     doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
-    doc.text("NAT VOYAGES - TRANSPORT MARITIME", 20, 20);
+    doc.text("NAT VOYAGE - TRANSPORT MARITIME", 20, 20);
 
     // Infos de l'entreprise
     doc.setFontSize(10);
@@ -304,7 +304,7 @@ export default function DetailVoyage() {
       28
     );
     doc.text("Tél: +225 XX XX XX XX", 20, 34);
-    doc.text("Email: contact@natvoyages.ci", 20, 40);
+    doc.text("Email: contact@natvoyage.ci", 20, 40);
 
     // Ligne séparatrice
     doc.line(20, 45, 190, 45);
@@ -358,7 +358,7 @@ export default function DetailVoyage() {
       142
     );
     doc.setFont("helvetica", "normal");
-    doc.text(`Encaissé par : Système NAT VOYAGES`, 20, 148);
+    doc.text(`Encaissé par : Système NAT VOYAGE`, 20, 148);
 
     // Informations additionnelles si bébé
     if (donneesVente.numero_billet_parent) {
@@ -459,7 +459,7 @@ export default function DetailVoyage() {
         // Titre principal
         doc.setFont("helvetica", "bold");
         doc.setFontSize(14);
-        doc.text("NAT VOYAGES - TRANSPORT MARITIME", 20, 20);
+        doc.text("NAT VOYAGE - TRANSPORT MARITIME", 20, 20);
 
         // Infos de l'entreprise
         doc.setFontSize(10);
@@ -496,8 +496,13 @@ export default function DetailVoyage() {
         let dateVoyageFormatee = "N/A";
         if (vente?.date_voyage) {
           if (vente.date_voyage instanceof Date) {
-            dateVoyageFormatee = vente.date_voyage.toLocaleDateString("fr-FR") + " " +
-                                 vente.date_voyage.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+            dateVoyageFormatee =
+              vente.date_voyage.toLocaleDateString("fr-FR") +
+              " " +
+              vente.date_voyage.toLocaleTimeString("fr-FR", {
+                hour: "2-digit",
+                minute: "2-digit",
+              });
           } else if (typeof vente.date_voyage === "string") {
             dateVoyageFormatee = vente.date_voyage;
           }
@@ -534,7 +539,7 @@ export default function DetailVoyage() {
           142
         );
         doc.setFont("helvetica", "normal");
-        doc.text(`Encaissé par : Système NAT VOYAGES`, 20, 148);
+        doc.text(`Encaissé par : Système NAT VOYAGE`, 20, 148);
 
         // Informations additionnelles si bébé
         if (vente.numero_billet_parent) {
@@ -1086,7 +1091,7 @@ export default function DetailVoyage() {
                     "tarif_bb_vip",
                     "tva",
                     "oprag",
-                    "promotion"
+                    "promotion",
                   ];
 
                   if (numericFields.includes(trajetKey)) {
@@ -1189,7 +1194,8 @@ export default function DetailVoyage() {
 
             // Convertir le Timestamp Firestore du voyage retour en objet Date JavaScript
             let dateVoyageRetour = new Date();
-            const timestampRetour = voyageRetourSelectionne.date_voyage_timestamp;
+            const timestampRetour =
+              voyageRetourSelectionne.date_voyage_timestamp;
             if (timestampRetour && timestampRetour.toDate) {
               dateVoyageRetour = timestampRetour.toDate();
             } else if (timestampRetour && timestampRetour.seconds) {
@@ -1265,13 +1271,17 @@ export default function DetailVoyage() {
                       "tarif_bb_vip",
                       "tva",
                       "oprag",
-                      "promotion"
+                      "promotion",
                     ];
 
                     if (numericFields.includes(trajetKey)) {
                       // Convertir en nombre ou 0 si vide/invalide
                       const value = trajetItem[trajetKey];
-                      if (value === "" || value === null || value === undefined) {
+                      if (
+                        value === "" ||
+                        value === null ||
+                        value === undefined
+                      ) {
                         cleanedTrajet[trajetKey] = 0;
                       } else {
                         const parsed = parseFloat(value);

@@ -293,7 +293,7 @@ export default function DetailVoyage() {
     // Titre principal
     doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
-    doc.text("NAT VOYAGE - TRANSPORT MARITIME", 20, 20);
+    doc.text("NAT VOYAGE", 20, 20);
 
     // Infos de l'entreprise
     doc.setFontSize(10);
@@ -459,7 +459,7 @@ export default function DetailVoyage() {
         // Titre principal
         doc.setFont("helvetica", "bold");
         doc.setFontSize(14);
-        doc.text("NAT VOYAGE - TRANSPORT MARITIME", 20, 20);
+        doc.text("NAT VOYAGE", 20, 20);
 
         // Infos de l'entreprise
         doc.setFontSize(10);
@@ -511,7 +511,13 @@ export default function DetailVoyage() {
         doc.text(`Ville de départ : ${villeDepart}`, 20, 72);
         doc.text(`Ville d'arrivée : ${villeArrivee}`, 20, 78);
         doc.text(`Date de voyage : ${dateVoyageFormatee}`, 20, 84);
-        doc.text("Franchise de bagage : 20kgs", 20, 90);
+        doc.text(
+          `Moyen de transport : ${vente?.type_bateau_libelle || "N/A"}`,
+          20,
+          90
+        );
+
+        doc.text("Franchise de bagage : 20kgs", 20, 96);
 
         // Réservation
         doc.setFont("helvetica", "bold");
@@ -855,6 +861,15 @@ export default function DetailVoyage() {
         const currentVoyageData = voyageDoc.data();
         let currentVoyageRetourData = null;
 
+        // Récupérer les informations du bateau à partir de bateau_reference
+        let bateauData = null;
+        if (currentVoyageData.bateau) {
+          const bateauDoc = await transaction.get(currentVoyageData.bateau);
+          if (bateauDoc.exists()) {
+            bateauData = bateauDoc.data();
+          }
+        }
+
         // Lecture du voyage retour si nécessaire
         if (
           reservationForm.type_voyage === "aller_retour" &&
@@ -891,6 +906,16 @@ export default function DetailVoyage() {
           throw new Error(
             `Plus assez de places VIP disponibles (${placesNecessaires.VIP} demandées, ${placesDispoVipActuelles} disponibles)`
           );
+        }
+        // Récupérer les informations du bateau retour si nécessaire
+        let bateauRetourData = null;
+        if (currentVoyageRetourData && currentVoyageRetourData.bateau) {
+          const bateauRetourDoc = await transaction.get(
+            currentVoyageRetourData.bateau
+          );
+          if (bateauRetourDoc.exists()) {
+            bateauRetourData = bateauRetourDoc.data();
+          }
         }
 
         // Vérifications pour le voyage retour
@@ -1039,6 +1064,9 @@ export default function DetailVoyage() {
             create_time: serverTimestamp(),
             status: "Payer",
             voyage_reference: voyageRef,
+            type_bateau_libelle: bateauData?.type_bateau_libelle || "",
+            type_bateau: bateauData?.type_bateau || "",
+            bateau_reference: currentVoyageData.bateau || "",
             trajet: (reservationForm.trajets_selectionnes || []).map((index) =>
               voyage?.trajet && voyage.trajet[index] ? voyage.trajet[index] : {}
             ),
@@ -1190,7 +1218,6 @@ export default function DetailVoyage() {
               reservationForm.voyage_retour_id
             );
             console.log(voyageRetourSelectionne?.trajet);
-            //TODO: Les trajets sélectionnés contiennent des valeurs vides
 
             // Convertir le Timestamp Firestore du voyage retour en objet Date JavaScript
             let dateVoyageRetour = new Date();
@@ -1220,6 +1247,9 @@ export default function DetailVoyage() {
               status: "Payer",
               date_voyage: dateVoyageRetour,
               voyage_reference: voyageRetourRef,
+              type_bateau_libelle: bateauRetourData?.type_bateau_libelle || "",
+              type_bateau: bateauRetourData?.type_bateau || "",
+              bateau_reference: currentVoyageRetourData?.bateau || "",
               trajet: voyageRetourSelectionne?.trajet || [],
               client_reference: doc(db, "clients", clientReference) || "",
               client_name: `${passager.prenom || ""} ${
@@ -1500,7 +1530,7 @@ export default function DetailVoyage() {
           id: doc.id,
           referenceDoc: doc.ref.path,
           libelle_bateau: data.libelle_bateau || "Inconnu",
-          bateau_reference: data.bateau_reference || "",
+          bateau_reference: data.bateau || "",
           date_voyage_timestamp: data.date_voyage || null, // Timestamp original pour Firestore
           date_voyage: data.date_voyage
             ? `${data.date_voyage

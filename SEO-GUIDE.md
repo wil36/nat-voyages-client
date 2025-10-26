@@ -1,8 +1,9 @@
-# Guide SEO - Nat Voyages
+# Guide SEO - Nat Voyage
 
 ## ✅ Configuration SEO Complétée
 
 ### 1. Meta Tags SEO (index.html)
+
 - ✅ Title optimisé avec mots-clés
 - ✅ Meta description attractive (155-160 caractères)
 - ✅ Meta keywords ciblés
@@ -11,16 +12,19 @@
 - ✅ Language et geo tags
 
 ### 2. Open Graph & Social Media
+
 - ✅ Open Graph tags (Facebook, LinkedIn)
 - ✅ Twitter Card tags
 - ✅ Images optimisées pour partage social
 
 ### 3. Structured Data (Schema.org)
+
 - ✅ JSON-LD pour Organization
 - ✅ Informations de contact
 - ✅ Réseaux sociaux
 
 ### 4. Fichiers Techniques
+
 - ✅ robots.txt configuré
 - ✅ sitemap.xml créé
 - ✅ manifest.json optimisé
@@ -29,6 +33,7 @@
 ## 📋 Checklist SEO Technique
 
 ### Performance
+
 - [ ] Activer la compression GZIP (configuré dans .htaccess)
 - [ ] Optimiser les images (WebP, compression)
 - [ ] Minifier CSS/JS (automatique avec build)
@@ -36,6 +41,7 @@
 - [ ] CDN pour les assets statiques
 
 ### Contenu
+
 - [ ] Ajouter des balises H1, H2, H3 structurées
 - [ ] Créer du contenu unique et pertinent
 - [ ] Ajouter des alt text sur toutes les images
@@ -43,6 +49,7 @@
 - [ ] Éviter le duplicate content
 
 ### Technique
+
 - ✅ HTTPS activé (configuré dans .htaccess)
 - ✅ Mobile-friendly (responsive design)
 - ✅ Temps de chargement < 3s
@@ -50,6 +57,7 @@
 - [ ] URL propres et SEO-friendly
 
 ### Local SEO
+
 - [ ] Google My Business
 - [ ] Citations locales (annuaires gabonais)
 - [ ] Avis clients Google
@@ -58,6 +66,7 @@
 ## 🚀 Prochaines Étapes
 
 ### 1. Soumettre à Google
+
 ```bash
 # Aller sur Google Search Console
 https://search.google.com/search-console
@@ -67,18 +76,21 @@ https://www.natvoyages.ga/sitemap.xml
 ```
 
 ### 2. Vérifier l'indexation
+
 ```bash
 # Recherche Google
 site:natvoyages.ga
 ```
 
 ### 3. Outils à utiliser
+
 - Google Search Console : https://search.google.com/search-console
 - Google Analytics : https://analytics.google.com
 - PageSpeed Insights : https://pagespeed.web.dev
 - Mobile-Friendly Test : https://search.google.com/test/mobile-friendly
 
 ### 4. Monitoring
+
 - Surveiller le ranking des mots-clés
 - Analyser le trafic organique
 - Vérifier les backlinks
@@ -87,13 +99,15 @@ site:natvoyages.ga
 ## 🎯 Mots-clés Principaux
 
 ### Principaux
+
 1. transport maritime gabon
 2. bateau gabon
 3. réservation billet bateau gabon
-4. nat voyages
+4. nat voyage
 5. libreville port-gentil bateau
 
 ### Secondaires
+
 1. transport fluvial gabon
 2. voyage maritime gabon
 3. billets bateau en ligne gabon
@@ -103,6 +117,7 @@ site:natvoyages.ga
 ## 📱 Réseaux Sociaux
 
 N'oubliez pas de :
+
 1. Créer une page Facebook Business
 2. Créer un compte Instagram
 3. Mettre à jour les liens dans index.html (lignes 61-64)
@@ -111,6 +126,7 @@ N'oubliez pas de :
 ## 🔗 Backlinks
 
 Stratégies pour obtenir des backlinks :
+
 1. Annuaires d'entreprises gabonaises
 2. Partenariats avec agences de voyage
 3. Articles de blog invités
@@ -136,17 +152,20 @@ Stratégies pour obtenir des backlinks :
 ## 📝 Maintenance SEO
 
 ### Hebdomadaire
+
 - Publier nouveau contenu
 - Répondre aux avis clients
 - Vérifier les erreurs 404
 
 ### Mensuelle
+
 - Analyser les performances
 - Mettre à jour le sitemap si nouvelles pages
 - Vérifier les backlinks
 - Optimiser les pages lentes
 
 ### Trimestrielle
+
 - Audit SEO complet
 - Analyse de la concurrence
 - Mise à jour des mots-clés

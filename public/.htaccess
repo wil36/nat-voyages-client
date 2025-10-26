@@ -1,4 +1,4 @@
-# Configuration Apache pour Nat Voyages
+# Configuration Apache pour Nat Voyage
 
 # Activer la réécriture d'URL
 <IfModule mod_rewrite.c>

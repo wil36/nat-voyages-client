@@ -1,4 +1,4 @@
-# 🚢 Nat Voyages - Plateforme de Réservation de Transport Maritime
+# 🚢 Nat Voyage - Plateforme de Réservation de Transport Maritime
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![React](https://img.shields.io/badge/React-18.x-61DAFB?logo=react)
@@ -7,7 +7,7 @@
 
 ## 📋 Description
 
-**Nat Voyages** est une plateforme web moderne de réservation de billets de transport maritime au Gabon. L'application permet aux utilisateurs de rechercher des voyages, réserver des billets pour plusieurs passagers (adultes, enfants, bébés), et gérer leurs réservations en temps réel.
+**Nat Voyage** est une plateforme web moderne de réservation de billets de transport maritime au Gabon. L'application permet aux utilisateurs de rechercher des voyages, réserver des billets pour plusieurs passagers (adultes, enfants, bébés), et gérer leurs réservations en temps réel.
 
 ### 🎯 Objectif du Projet
 
@@ -16,6 +16,7 @@ Digitaliser et simplifier le processus de réservation de billets de transport m
 ## ✨ Fonctionnalités Principales
 
 ### Pour les Clients
+
 - 🔍 **Recherche de Voyages** : Rechercher des voyages par ville de départ, destination et date
 - 🎫 **Réservation Multi-Passagers** : Réserver des billets pour plusieurs passagers en une seule transaction
 - 🔄 **Aller-Retour** : Option de réserver des voyages aller-retour avec détection automatique des correspondances
@@ -25,6 +26,7 @@ Digitaliser et simplifier le processus de réservation de billets de transport m
 - 📱 **Responsive Design** : Interface optimisée pour mobile, tablette et desktop
 
 ### Gestion des Données
+
 - 🔐 **Authentification Sécurisée** : Système d'authentification Firebase
 - 💾 **Base de Données Temps Réel** : Firestore pour la gestion des données
 - ✅ **Validation des Données** : Vérification automatique des champs et conversion des types
@@ -34,6 +36,7 @@ Digitaliser et simplifier le processus de réservation de billets de transport m
 ## 🛠️ Technologies Utilisées
 
 ### Frontend
+
 - **React 18.x** - Framework JavaScript pour l'interface utilisateur
 - **React Router v6** - Navigation et routing
 - **Bootstrap 5** - Framework CSS pour le design responsive
@@ -41,11 +44,13 @@ Digitaliser et simplifier le processus de réservation de billets de transport m
 - **QRCode** - Génération de QR Codes sur les billets
 
 ### Backend & Database
+
 - **Firebase Authentication** - Gestion des utilisateurs
 - **Cloud Firestore** - Base de données NoSQL en temps réel
 - **Firebase Storage** - Stockage des fichiers
 
 ### SEO & Performance
+
 - **Meta Tags Optimisés** - SEO pour les moteurs de recherche
 - **Sitemap.xml** - Plan du site pour l'indexation
 - **Robots.txt** - Configuration pour les crawlers
@@ -89,22 +94,26 @@ nat-voyages-client/
 ## 🚀 Installation et Configuration
 
 ### Prérequis
+
 - Node.js (version 14.x ou supérieure)
 - npm ou yarn
 - Compte Firebase
 
 ### 1. Cloner le Projet
+
 ```bash
 git clone https://github.com/votre-repo/nat-voyages-client.git
 cd nat-voyages-client
 ```
 
 ### 2. Installer les Dépendances
+
 ```bash
 npm install
 ```
 
 ### 3. Configuration Firebase
+
 Créez un fichier `src/firebase.js` avec votre configuration Firebase :
 
 ```javascript
@@ -118,7 +127,7 @@ const firebaseConfig = {
   projectId: "VOTRE_PROJECT_ID",
   storageBucket: "VOTRE_STORAGE_BUCKET",
   messagingSenderId: "VOTRE_MESSAGING_SENDER_ID",
-  appId: "VOTRE_APP_ID"
+  appId: "VOTRE_APP_ID",
 };
 
 const app = initializeApp(firebaseConfig);
@@ -129,20 +138,25 @@ export const db = getFirestore(app);
 ### 4. Lancer l'Application
 
 #### Mode Développement
+
 ```bash
 npm start
 ```
+
 L'application sera accessible sur [http://localhost:3000](http://localhost:3000)
 
 #### Build de Production
+
 ```bash
 npm run build
 ```
+
 Les fichiers optimisés seront générés dans le dossier `build/`
 
 ## 📊 Structure de la Base de Données (Firestore)
 
 ### Collection `voyages`
+
 ```javascript
 {
   libelle_bateau: string,
@@ -173,6 +187,7 @@ Les fichiers optimisés seront générés dans le dossier `build/`
 ```
 
 ### Collection `lieux`
+
 ```javascript
 {
   libelle_lieux: string,
@@ -181,6 +196,7 @@ Les fichiers optimisés seront générés dans le dossier `build/`
 ```
 
 ### Collection `ventes`
+
 ```javascript
 {
   numero_billet: string,
@@ -209,6 +225,7 @@ Les fichiers optimisés seront générés dans le dossier `build/`
 Le projet est entièrement optimisé pour le référencement naturel. Consultez le [Guide SEO](SEO-GUIDE.md) pour plus de détails.
 
 ### Points Clés SEO
+
 - ✅ Meta tags optimisés (title, description, keywords)
 - ✅ Open Graph pour réseaux sociaux
 - ✅ Structured Data (Schema.org)
@@ -217,15 +234,17 @@ Le projet est entièrement optimisé pour le référencement naturel. Consultez 
 - ✅ Performance optimisée
 
 ### Mots-clés Ciblés
+
 - Transport maritime Gabon
 - Bateau Gabon
-- Réservation billet bateau
+- Réservation billet
 - Libreville Port-Gentil
-- Nat Voyages
+- Nat Voyage
 
 ## 📱 Progressive Web App (PWA)
 
 L'application est configurée comme PWA et peut être installée sur les appareils mobiles :
+
 - ✅ Manifest.json configuré
 - ✅ Service Worker (optionnel)
 - ✅ Mode offline (à implémenter)
@@ -234,6 +253,7 @@ L'application est configurée comme PWA et peut être installée sur les apparei
 ## 🔒 Sécurité
 
 ### Mesures de Sécurité Implémentées
+
 - 🔐 Authentification Firebase
 - ✅ Règles de sécurité Firestore
 - ✅ Validation des données côté client
@@ -252,6 +272,7 @@ L'application est configurée comme PWA et peut être installée sur les apparei
 ## 📈 Améliorations Futures
 
 ### Fonctionnalités Prévues
+
 - [ ] Système de paiement en ligne (Mobile Money, Carte bancaire)
 - [ ] Notifications par email/SMS
 - [ ] Historique des réservations pour les clients
@@ -264,6 +285,7 @@ L'application est configurée comme PWA et peut être installée sur les apparei
 - [ ] Système d'avis et notations
 
 ### Optimisations Techniques
+
 - [ ] Lazy loading des images
 - [ ] Code splitting
 - [ ] Service Worker pour cache
@@ -276,12 +298,15 @@ L'application est configurée comme PWA et peut être installée sur les apparei
 ### Problèmes Courants
 
 **Problème : Les dates s'affichent comme "Timestamp(...)"**
+
 - Solution : Vérifier que `date_voyage` est converti en Date JavaScript
 
 **Problème : Les tarifs sont enregistrés comme chaînes vides**
+
 - Solution : La validation des champs numériques est maintenant implémentée
 
 **Problème : Navbar trop haute**
+
 - Solution : Ajuster `minHeight` dans NavBarComponent.js
 
 ## 📞 Contact et Support

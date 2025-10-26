@@ -19,6 +19,7 @@ import { db } from "../firebase";
 import NavBarComponent from "../components/NavBarComponent";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import FooterComponent from "../components/FooterComponent";
+import { useRateLimit } from "../hooks/useRateLimit";
 
 export default function DetailVoyage() {
   const [voyage, setVoyage] = useState(null);
@@ -56,6 +57,9 @@ export default function DetailVoyage() {
   const [tousLesVoyages, setTousLesVoyages] = useState([]);
   const [loadingVoyagesRetour, setLoadingVoyagesRetour] = useState(false);
   const [voyageRetourSelectionne, setVoyageRetourSelectionne] = useState(null);
+
+  // Rate Limiting: Max 3 tentatives en 10 secondes, sinon blocage 10 minutes
+  const rateLimit = useRateLimit();
 
   const handleBackNavigation = () => {
     navigate("/");
@@ -812,12 +816,31 @@ export default function DetailVoyage() {
   const handleTicketSubmit = async (e) => {
     e.preventDefault();
 
+    // VÉRIFICATION RATE LIMIT - 3 tentatives max en 10 secondes
+    if (!rateLimit.canProceed) {
+      const blockTimeSeconds = Math.ceil(rateLimit.blockTimeRemaining / 1000);
+      const minutes = Math.floor(blockTimeSeconds / 60);
+      const seconds = blockTimeSeconds % 60;
+
+      alert(
+        `🚫 ACCÈS BLOQUÉ - Trop de tentatives\n\n` +
+        `Vous avez dépassé la limite de 3 tentatives en 10 secondes.\n\n` +
+        `⏱️ Temps restant avant déblocage: ${minutes}m ${seconds}s\n\n` +
+        `Cette mesure de sécurité protège le système contre les abus.\n` +
+        `Veuillez patienter avant de réessayer.`
+      );
+      return;
+    }
+
     // Validation avant soumission
     if (!validateForm()) {
       return;
     }
 
     setIsSubmitting(true);
+
+    // Enregistrer la tentative dans le rate limiter
+    rateLimit.recordAttempt();
 
     try {
       // Vérifier la disponibilité des places en temps réel
@@ -1075,7 +1098,12 @@ export default function DetailVoyage() {
               passager.nom || ""
             }`.trim(),
             type_paiement: "Mobile Money",
-            agent_reference: doc(db, "users", "u8Eye0rIVa0gG15xwF8m") || "",
+            agent_reference:
+              doc(
+                db,
+                "users",
+                process.env.REACT_APP_STATIC_ID_AGENT_NAT_VOYAGE
+              ) || "",
             agent_name: "Nat Voyage System",
             sexe_client: passager.sexe || "",
             isGo: false,
@@ -1083,7 +1111,11 @@ export default function DetailVoyage() {
             agence_reference: voyage?.agence_reference || "",
             agence_name: voyage?.agence_name || "",
             agence_vente_reference:
-              doc(db, "agences", "cvnjkcnezjncjekzncjkezncjkeznjckez") || "",
+              doc(
+                db,
+                "agences",
+                process.env.REACT_APP_STATIC_ID_AGENCE_NAT_VOYAGE
+              ) || "",
             agence_vente_name: "Nat Voyage System",
             type_passager: passager.type_passager || "",
             type_voyage: reservationForm.type_voyage,
@@ -1256,10 +1288,19 @@ export default function DetailVoyage() {
                 passager.nom || ""
               }`.trim(),
               type_paiement: "Mobile Money",
-              agent_reference: doc(db, "users", "u8Eye0rIVa0gG15xwF8m") || "",
+              agent_reference:
+                doc(
+                  db,
+                  "users",
+                  "" + process.env.REACT_APP_STATIC_ID_AGENT_NAT_VOYAGE
+                ) || "",
               agent_name: "Nat Voyage System",
               agence_vente_reference:
-                doc(db, "agences", "cvnjkcnezjncjekzncjkezncjkeznjckez") || "",
+                doc(
+                  db,
+                  "agences",
+                  "" + process.env.REACT_APP_STATIC_ID_AGENCE_NAT_VOYAGE
+                ) || "",
               agence_vente_name: "Nat Voyage System",
               sexe_client: passager.sexe || "",
               isGo: false,

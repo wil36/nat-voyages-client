@@ -1,4 +1,4 @@
-# robots.txt pour Nat Voyages
+# robots.txt pour Nat Voyage
 User-agent: *
 Allow: /
 Disallow: /admin/

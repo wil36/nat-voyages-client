@@ -110,7 +110,7 @@ export default function Dashboard() {
           collection(db, "voyages"),
           where("date_voyage", ">=", today),
           where("status", "==", "Actif"),
-          orderBy("date_voyage", "desc")
+          orderBy("date_voyage", "asc")
         );
 
         const querySnapshot = await getDocs(q);
@@ -256,7 +256,10 @@ export default function Dashboard() {
           console.log("Date de recherche:", searchDateString);
           console.log("Date du voyage:", voyage.date_voyage);
 
-          if (voyage.date_voyage !== searchDateString) {
+          // Extraire uniquement la partie date (avant l'espace) de voyage.date_voyage
+          const voyageDateOnly = voyage.date_voyage.split(" ")[0];
+
+          if (voyageDateOnly !== searchDateString) {
             matchesFilter = false;
             console.log("Date non correspondante:", voyage.date_voyage);
           }

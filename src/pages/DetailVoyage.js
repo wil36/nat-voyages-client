@@ -293,7 +293,7 @@ export default function DetailVoyage() {
     // Titre principal
     doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
-    doc.text("NAT VOYAGE", 20, 20);
+    doc.text("NAT VOYAGE - Réservez en un clic, voyagez partout", 20, 20);
 
     // Infos de l'entreprise
     doc.setFontSize(10);
@@ -459,7 +459,7 @@ export default function DetailVoyage() {
         // Titre principal
         doc.setFont("helvetica", "bold");
         doc.setFontSize(14);
-        doc.text("NAT VOYAGE", 20, 20);
+        doc.text("NAT VOYAGE - Réservez en un clic, voyagez partout.", 20, 20);
 
         // Infos de l'entreprise
         doc.setFontSize(10);
@@ -1615,13 +1615,19 @@ export default function DetailVoyage() {
                             </ul>
                           </div>
                         </div>
-                        <div
-                          className="nk-block-head-content"
-                          onClick={handleBackNavigation}
-                        >
+                        <div className="nk-block-head-content">
+                          <button
+                            className="btn btn-primary mr-2"
+                            data-toggle="modal"
+                            data-target="#ticketModal"
+                          >
+                            <em className="icon ni ni-ticket" />
+                            <span>Réservation</span>
+                          </button>
                           <a
                             href="#"
                             className="btn btn-outline-light bg-white d-none d-sm-inline-flex"
+                            onClick={handleBackNavigation}
                           >
                             <em className="icon ni ni-arrow-left" />
                             <span>Retour</span>
@@ -1629,6 +1635,7 @@ export default function DetailVoyage() {
                           <a
                             href="#"
                             className="btn btn-icon btn-outline-light bg-white d-inline-flex d-sm-none"
+                            onClick={handleBackNavigation}
                           >
                             <em className="icon ni ni-arrow-left" />
                           </a>
@@ -1661,7 +1668,7 @@ export default function DetailVoyage() {
                                   <div className="profile-ud-item">
                                     <div className="profile-ud wider">
                                       <span className="profile-ud-label">
-                                        Bateau
+                                        Moyen de transport
                                       </span>
                                       <span className="profile-ud-value">
                                         {voyage?.libelle_bateau}
@@ -1752,59 +1759,12 @@ export default function DetailVoyage() {
                                 {/* .profile-ud-list */}
                               </div>
                               {/* .nk-block */}
-                              <div className="nk-block">
-                                <div className="nk-block-head nk-block-head-line">
-                                  <h6 className="title overline-title text-base">
-                                    Équipage
-                                  </h6>
-                                </div>
-                                {/* .nk-block-head */}
-                                <div className="profile-ud-list">
-                                  <div className="profile-ud-item">
-                                    <div className="profile-ud wider">
-                                      <span className="profile-ud-label">
-                                        Hôtesse 1
-                                      </span>
-                                      <span className="profile-ud-value">
-                                        {voyage?.hotesse1 || "Non assigné"}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <div className="profile-ud-item">
-                                    <div className="profile-ud wider">
-                                      <span className="profile-ud-label">
-                                        Hôtesse 2
-                                      </span>
-                                      <span className="profile-ud-value">
-                                        {voyage?.hotesse2 || "Non assigné"}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <div className="profile-ud-item">
-                                    <div className="profile-ud wider">
-                                      <span className="profile-ud-label">
-                                        Mécanicien
-                                      </span>
-                                      <span className="profile-ud-value">
-                                        {voyage?.mecanicien || "Non assigné"}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                                {/* .profile-ud-list */}
-                              </div>
+
                               {/* .nk-block */}
                               <div className="nk-divider divider md" />
                               <div className="nk-block">
                                 <div className="nk-block-head nk-block-head-sm nk-block-between">
                                   <h5 className="title">Trajet</h5>
-                                  <button
-                                    className="btn btn-primary btn-sm"
-                                    data-toggle="modal"
-                                    data-target="#ticketModal"
-                                  >
-                                    Acheter un billet
-                                  </button>
                                 </div>
                                 {/* .nk-block-head */}
                                 <div className="trajet-details">

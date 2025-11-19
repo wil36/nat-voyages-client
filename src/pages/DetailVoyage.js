@@ -11,6 +11,7 @@ import {
   orderBy,
   serverTimestamp,
   runTransaction,
+  onSnapshot,
 } from "firebase/firestore";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -824,10 +825,10 @@ export default function DetailVoyage() {
 
       alert(
         `🚫 ACCÈS BLOQUÉ - Trop de tentatives\n\n` +
-        `Vous avez dépassé la limite de 3 tentatives en 10 secondes.\n\n` +
-        `⏱️ Temps restant avant déblocage: ${minutes}m ${seconds}s\n\n` +
-        `Cette mesure de sécurité protège le système contre les abus.\n` +
-        `Veuillez patienter avant de réessayer.`
+          `Vous avez dépassé la limite de 3 tentatives en 10 secondes.\n\n` +
+          `⏱️ Temps restant avant déblocage: ${minutes}m ${seconds}s\n\n` +
+          `Cette mesure de sécurité protège le système contre les abus.\n` +
+          `Veuillez patienter avant de réessayer.`
       );
       return;
     }
@@ -1419,84 +1420,293 @@ export default function DetailVoyage() {
         return { ventes };
       });
 
-      // 5. Générer un PDF multi-pages (une page par passager)
-      await genererFactureMultiPassagers(result.ventes);
+      // 5. Générer un ID de réservation unique
+      const reservationId =
+        Date.now().toString() +
+        Math.random().toString(36).substring(2, 7).toUpperCase();
 
-      // Réinitialiser le formulaire
-      setReservationForm({
-        type_voyage: "aller_simple",
-        trajets_selectionnes: [],
-        voyage_retour_id: "",
-        passagers: [
-          {
-            id: 1,
-            type_passager: "Adulte",
-            classe: "Economie",
-            type_piece: "Carte d'identité",
-            numero_piece: "",
-            nom: "",
-            prenom: "",
-            sexe: "Masculin",
-            telephone: "",
-            adresse: "",
-          },
-        ],
+      // 6. Marquer toutes les ventes avec cet ID de réservation
+      const batchUpdate = [];
+      for (const vente of result.ventes) {
+        const venteRef = doc(db, "ventes", vente.id);
+        batchUpdate.push(
+          updateDoc(venteRef, {
+            reservationId: reservationId,
+            status: "En attente", // En attente du paiement
+            paymentPending: true,
+          })
+        );
+      }
+      await Promise.all(batchUpdate);
+
+      console.log(`✅ Ventes marquées avec reservationId: ${reservationId}`);
+
+      // 7. CRÉER LE TOKEN DE PAIEMENT (avant le subscribe)
+      console.log("🔑 Création du token de paiement...");
+
+      // let paymentToken = null;
+      // try {
+      //   // TODO: Remplacer par vos vraies informations API
+      //   const tokenResponse = await fetch(
+      //     "https://api.mypvit.pro/KJNXIKF8JNNSVENJ/renew-secret",
+      //     {
+      //       method: "POST",
+      //       headers: {
+      //         "Content-Type": "application/x-www-form-urlencoded",
+      //         "X-Secret-MediaType": "string",
+      //         Accept: "application/json",
+      //         "X-Secret": process.env.REACT_APP_X_SECRET,
+      //       },
+      //       body: JSON.stringify({
+      //         operationAccountCode:
+      //           process.env.REACT_APP_OPERATION_ACCOUNT_CODE,
+      //         receptionUrlCode: process.env.REACT_APP_RECEPTION_URL_CODE,
+      //         password: process.env.REACT_APP_PASSWORD,
+      //       }),
+      //     }
+      //   );
+
+      //   if (!tokenResponse.ok) {
+      //     throw new Error("Erreur lors de la création du token");
+      //   }
+
+      //   const tokenData = await tokenResponse.json();
+      //   paymentToken = tokenData.token; // Adapter selon la structure de votre réponse
+
+      //   console.log("✅ Token créé avec succès:", paymentToken);
+      // } catch (error) {
+      //   console.error("❌ Erreur création token:", error);
+      //   alert(
+      //     "Erreur lors de la création du token de paiement. Veuillez réessayer."
+      //   );
+      //   setIsSubmitting(false);
+      //   return;
+      // }
+      // let timerInterval;
+      // 8. Informer l'utilisateur que la réservation est en attente de paiement
+      Swal.fire({
+        title: "Paiement en cours...",
+        html:
+          '<p style="font-size: 16px; margin-bottom: 20px;">' +
+          "Veuillez patienter pendant le traitement de votre paiement." +
+          "</p>" +
+          '<div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0;">' +
+          '<p style="margin: 5px 0;"><strong>💰 Montant:</strong> ' +
+          montantTotal.toLocaleString() +
+          " FCFA</p>" +
+          '<p style="margin: 5px 0;"><strong>📱 Téléphone:</strong> ' +
+          reservationForm.passagers[0].telephone +
+          "</p>" +
+          '<p style="margin: 5px 0;"><strong>🔑 Référence:</strong> ' +
+          reservationId +
+          "</p>" +
+          "</div>" +
+          '<p style="color: #dc3545; font-weight: bold; margin-top: 20px;">' +
+          "⚠️ Ne quittez pas cette page !" +
+          "</p>" +
+          '<p style="color: #6c757d; font-size: 14px; margin-top: 10px;">' +
+          "Vos billets seront générés automatiquement dès confirmation du paiement." +
+          "</p>",
+        timer: 600000,
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        timerProgressBar: false,
+        onBeforeOpen: function onBeforeOpen() {
+          Swal.showLoading();
+        },
+        onClose: function onClose() {},
+      }).then(function (result) {
+        if (result.dismiss === Swal.DismissReason.timer) {
+          Swal.fire({
+            icon: "error",
+            title: "Erreur !",
+            text: "Une erreur est survenue lors du traitement de votre paiement. Veuillez réessayer.",
+          });
+        }
       });
 
-      // Réinitialiser les états des voyages de retour
-      setVoyagesRetour([]);
-      setVoyageRetourSelectionne(null);
+      // 8. Écouter les changements de statut en temps réel via Firestore
+      const ventesQuery = query(
+        collection(db, "ventes"),
+        where("reservationId", "==", reservationId)
+      );
 
-      setErrors({});
-      setMontantTotal(0);
+      const unsubscribe = onSnapshot(ventesQuery, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === "modified") {
+            const venteData = change.doc.data();
 
-      // alert(
-      //   `✅ ${
-      //     result.ventes.length
-      //   } billet(s) réservé(s) avec succès pour un montant total de ${montantTotal.toLocaleString()} FCFA\n\n📄 Les billets ont été ouverts dans une nouvelle fenêtre pour visualisation\n💾 Le téléchargement automatique va commencer dans quelques secondes`
-      // );
+            // NOUVELLE CONDITION: Si le statut passe à "En attente", initier le paiement
+            if (
+              venteData.status === "En attente" &&
+              !venteData.paymentInitiated
+            ) {
+              // Marquer comme "paiement initié" pour éviter les doublons
+              updateDoc(change.doc.ref, {
+                paymentInitiated: true,
+                paymentInitiatedAt: new Date().toISOString(),
+              });
 
-      // Fermer complètement le modal après succès
-      const modalElement = document.getElementById("ticketModal");
-      if (modalElement) {
-        try {
-          // Essayer la méthode jQuery (Bootstrap 4/5 avec jQuery)
-          if (window.$ && window.$.fn.modal) {
-            window.$("#ticketModal").modal("hide");
-          }
-          // Sinon essayer la méthode Bootstrap native
-          else if (
-            window.bootstrap &&
-            window.bootstrap.Modal &&
-            window.bootstrap.Modal.getInstance
-          ) {
-            const modal = window.bootstrap.Modal.getInstance(modalElement);
-            if (modal) {
-              modal.hide();
+              // REQUÊTE HTTP POUR INITIER LE PAIEMENT
+              fetch("YOUR_PAYMENT_API_URL/initiate-payment", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  // TODO: Ajouter vos headers d'authentification
+                  // "Authorization": "Bearer YOUR_API_KEY",
+                  // "X-Payment-Token": paymentToken,
+                },
+                body: JSON.stringify({
+                  // TODO: Adapter selon votre API
+                  reservationId: reservationId,
+                  token: paymentToken,
+                  amount: montantTotal,
+                  phoneNumber: reservationForm.passagers[0].telephone,
+                  customerName: `${reservationForm.passagers[0].prenom} ${reservationForm.passagers[0].nom}`,
+                  reference: reservationId,
+                  // Ajouter d'autres paramètres requis par votre API
+                }),
+              })
+                .then((response) => {
+                  if (!response.ok) {
+                    throw new Error("Erreur lors de l'initiation du paiement");
+                  }
+                  return response.json();
+                })
+                .then((data) => {
+                  console.log("✅ Paiement initié avec succès:", data);
+                  // TODO: Traiter la réponse selon votre API
+                  // Par exemple, afficher un message à l'utilisateur
+                })
+                .catch((error) => {
+                  Swal.fire({
+                    icon: "error",
+                    title: "Erreur !",
+                    text: "Erreur lors de l'initiation du paiement. Veuillez réessayer.",
+                  });
+                });
+            }
+
+            // Si le statut passe à "Payer", générer les billets
+            if (venteData.status === "Payer" && venteData.paymentConfirmedAt) {
+              Swal.close();
+              Swal.fire({
+                title: "Paiement confirmé!",
+                text: "Vos billets vont être générés.",
+                icon: "success",
+                timer: 2000,
+                showConfirmButton: false,
+              });
+
+              // Désabonner immédiatement pour éviter les doublons
+              unsubscribe();
+
+              // Récupérer toutes les ventes de cette réservation
+              getDocs(ventesQuery).then((ventesSnapshot) => {
+                const ventesConfirmees = [];
+                ventesSnapshot.forEach((doc) => {
+                  ventesConfirmees.push({
+                    id: doc.id,
+                    ...doc.data(),
+                  });
+                });
+
+                // Générer les billets PDF
+                genererFactureMultiPassagers(ventesConfirmees)
+                  .then(() => {})
+                  .catch(() => {
+                    Swal.fire({
+                      icon: "warning",
+                      title: "Avertissement",
+                      text:
+                        "Paiement confirmé mais erreur lors de la génération des billets.\n" +
+                        "Contactez le support avec la référence: " +
+                        reservationId,
+                    });
+                  });
+
+                // Réinitialiser le formulaire
+                setReservationForm({
+                  type_voyage: "aller_simple",
+                  trajets_selectionnes: [],
+                  voyage_retour_id: "",
+                  passagers: [
+                    {
+                      id: 1,
+                      type_passager: "Adulte",
+                      classe: "Economie",
+                      type_piece: "Carte d'identité",
+                      numero_piece: "",
+                      nom: "",
+                      prenom: "",
+                      sexe: "Masculin",
+                      telephone: "",
+                      adresse: "",
+                    },
+                  ],
+                });
+
+                // Réinitialiser les états des voyages de retour
+                setVoyagesRetour([]);
+                setVoyageRetourSelectionne(null);
+
+                setErrors({});
+                setMontantTotal(0);
+
+                // Fermer complètement le modal après succès
+                const modalElement = document.getElementById("ticketModal");
+                if (modalElement) {
+                  try {
+                    // Essayer la méthode jQuery (Bootstrap 4/5 avec jQuery)
+                    if (window.$ && window.$.fn.modal) {
+                      window.$("#ticketModal").modal("hide");
+                    }
+                    // Sinon essayer la méthode Bootstrap native
+                    else if (
+                      window.bootstrap &&
+                      window.bootstrap.Modal &&
+                      window.bootstrap.Modal.getInstance
+                    ) {
+                      const modal =
+                        window.bootstrap.Modal.getInstance(modalElement);
+                      if (modal) {
+                        modal.hide();
+                      }
+                    }
+                  } catch (e) {
+                    console.warn("Erreur lors de la fermeture du modal:", e);
+                  }
+
+                  // Nettoyage manuel complet (toujours exécuté pour garantir la fermeture)
+                  setTimeout(() => {
+                    modalElement.classList.remove("show", "fade");
+                    modalElement.style.display = "none";
+                    modalElement.setAttribute("aria-hidden", "true");
+                    modalElement.removeAttribute("aria-modal");
+                    modalElement.removeAttribute("role");
+
+                    // Supprimer toutes les classes modal du body
+                    document.body.classList.remove("modal-open");
+                    document.body.style.overflow = "";
+                    document.body.style.paddingRight = "";
+
+                    // Supprimer tous les backdrops
+                    const backdrops =
+                      document.querySelectorAll(".modal-backdrop");
+                    backdrops.forEach((backdrop) => backdrop.remove());
+                  }, 100);
+                }
+              });
             }
           }
-        } catch (e) {
-          console.warn("Erreur lors de la fermeture du modal:", e);
-        }
+        });
+      });
 
-        // Nettoyage manuel complet (toujours exécuté pour garantir la fermeture)
-        setTimeout(() => {
-          modalElement.classList.remove("show", "fade");
-          modalElement.style.display = "none";
-          modalElement.setAttribute("aria-hidden", "true");
-          modalElement.removeAttribute("aria-modal");
-          modalElement.removeAttribute("role");
-
-          // Supprimer toutes les classes modal du body
-          document.body.classList.remove("modal-open");
-          document.body.style.overflow = "";
-          document.body.style.paddingRight = "";
-
-          // Supprimer tous les backdrops
-          const backdrops = document.querySelectorAll(".modal-backdrop");
-          backdrops.forEach((backdrop) => backdrop.remove());
-        }, 100);
-      }
+      // Nettoyer l'écouteur après 10 minutes (timeout de sécurité)
+      setTimeout(() => {
+        unsubscribe();
+        console.log("⏱️ Timeout: Arrêt de l'écoute des changements");
+      }, 600000); // 10 minutes
     } catch (error) {
       console.error("Erreur lors de l'enregistrement:", error);
       alert(`Erreur lors de l'enregistrement des billets: ${error.message}`);

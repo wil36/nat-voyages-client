@@ -91,31 +91,54 @@
     });
     e.preventDefault();
   });
-  $('.eg-swal-av5').on("click", function (e) {
-    var timerInterval;
-    Swal.fire({
-      title: 'Auto close alert!',
-      html: 'I will close in <b></b> milliseconds.',
-      timer: 2000,
-      timerProgressBar: true,
-      onBeforeOpen: function onBeforeOpen() {
-        Swal.showLoading();
-        timerInterval = setInterval(function () {
-          Swal.getContent().querySelector('b').textContent = Swal.getTimerLeft();
-        }, 100);
-      },
-      onClose: function onClose() {
-        clearInterval(timerInterval);
-      }
-    }).then(function (result) {
-      if (
-      /* Read more about handling dismissals below */
-      result.dismiss === Swal.DismissReason.timer) {
-        console.log('I was closed by the timer'); // eslint-disable-line
-      }
-    });
-    e.preventDefault();
-  });
+   $(".eg-swal-av5").on("click", function (e) {
+     var timerInterval;
+     Swal.fire({
+       title: "Paiement en cours...",
+       html:
+         "" +
+         '<p style="font-size: 16px; margin-bottom: 20px;">' +
+         "Veuillez patienter pendant le traitement de votre paiement." +
+         "</p>" +
+         '<div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0;">' +
+         '<p style="margin: 5px 0;"><strong>💰 Montant:</strong> 100 FCFA</p>' +
+         '<p style="margin: 5px 0;"><strong>📱 Téléphone:</strong> ' +
+         "0771234567" +
+         "</p>" +
+         '<p style="margin: 5px 0;"><strong>🔑 Référence:</strong> ' +
+         "REF123456" +
+         "</p>" +
+         "</div>" +
+         '<p style="color: #dc3545; font-weight: bold; margin-top: 20px;">' +
+         "⚠️ Ne quittez pas cette page !" +
+         "</p>" +
+         '<p style="color: #6c757d; font-size: 14px; margin-top: 10px;">' +
+         "Vos billets seront générés automatiquement dès confirmation du paiement." +
+         "</p>",
+       timer: 5000,
+       allowOutsideClick: false,
+       allowEscapeKey: false,
+       timerProgressBar: false,
+       onBeforeOpen: function onBeforeOpen() {
+         Swal.showLoading();
+         timerInterval = setInterval(function () {
+           Swal.getContent().querySelector("b").textContent =
+             Swal.getTimerLeft();
+         }, 100);
+       },
+       onClose: function onClose() {
+         clearInterval(timerInterval);
+       },
+     }).then(function (result) {
+       if (
+         /* Read more about handling dismissals below */
+         result.dismiss === Swal.DismissReason.timer
+       ) {
+         console.log("I was closed by the timer"); // eslint-disable-line
+       }
+     });
+     e.preventDefault();
+   });
   $('.eg-swal-av6').on("click", function (e) {
     Swal.fire({
       title: 'Submit your Github username',

@@ -1548,43 +1548,43 @@ export default function DetailVoyage() {
               });
 
               // REQUÊTE HTTP POUR INITIER LE PAIEMENT
-              fetch("YOUR_PAYMENT_API_URL/initiate-payment", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  // TODO: Ajouter vos headers d'authentification
-                  // "Authorization": "Bearer YOUR_API_KEY",
-                  // "X-Payment-Token": paymentToken,
-                },
-                body: JSON.stringify({
-                  // TODO: Adapter selon votre API
-                  reservationId: reservationId,
-                  token: paymentToken,
-                  amount: montantTotal,
-                  phoneNumber: reservationForm.passagers[0].telephone,
-                  customerName: `${reservationForm.passagers[0].prenom} ${reservationForm.passagers[0].nom}`,
-                  reference: reservationId,
-                  // Ajouter d'autres paramètres requis par votre API
-                }),
-              })
-                .then((response) => {
-                  if (!response.ok) {
-                    throw new Error("Erreur lors de l'initiation du paiement");
-                  }
-                  return response.json();
-                })
-                .then((data) => {
-                  console.log("✅ Paiement initié avec succès:", data);
-                  // TODO: Traiter la réponse selon votre API
-                  // Par exemple, afficher un message à l'utilisateur
-                })
-                .catch((error) => {
-                  Swal.fire({
-                    icon: "error",
-                    title: "Erreur !",
-                    text: "Erreur lors de l'initiation du paiement. Veuillez réessayer.",
-                  });
-                });
+              // fetch("YOUR_PAYMENT_API_URL/initiate-payment", {
+              //   method: "POST",
+              //   headers: {
+              //     "Content-Type": "application/json",
+              //     // TODO: Ajouter vos headers d'authentification
+              //     // "Authorization": "Bearer YOUR_API_KEY",
+              //     // "X-Payment-Token": paymentToken,
+              //   },
+              //   body: JSON.stringify({
+              //     // TODO: Adapter selon votre API
+              //     reservationId: reservationId,
+              //     token: paymentToken,
+              //     amount: montantTotal,
+              //     phoneNumber: reservationForm.passagers[0].telephone,
+              //     customerName: `${reservationForm.passagers[0].prenom} ${reservationForm.passagers[0].nom}`,
+              //     reference: reservationId,
+              //     // Ajouter d'autres paramètres requis par votre API
+              //   }),
+              // })
+              //   .then((response) => {
+              //     if (!response.ok) {
+              //       throw new Error("Erreur lors de l'initiation du paiement");
+              //     }
+              //     return response.json();
+              //   })
+              //   .then((data) => {
+              //     console.log("✅ Paiement initié avec succès:", data);
+              //     // TODO: Traiter la réponse selon votre API
+              //     // Par exemple, afficher un message à l'utilisateur
+              //   })
+              //   .catch((error) => {
+              //     Swal.fire({
+              //       icon: "error",
+              //       title: "Erreur !",
+              //       text: "Erreur lors de l'initiation du paiement. Veuillez réessayer.",
+              //     });
+              //   });
             }
 
             // Si le statut passe à "Payer", générer les billets
@@ -1594,9 +1594,9 @@ export default function DetailVoyage() {
                 title: "Paiement confirmé!",
                 text: "Vos billets vont être générés.",
                 icon: "success",
-                timer: 2000,
+                timer: 3000,
                 showConfirmButton: false,
-              });
+              }).then({});
 
               // Désabonner immédiatement pour éviter les doublons
               unsubscribe();

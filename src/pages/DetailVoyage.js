@@ -543,7 +543,7 @@ export default function DetailVoyage() {
         doc.text(`Classe : ${vente.classe}`, 20, 136);
         doc.setFont("helvetica", "bold");
         doc.text(
-          `Montant TTC : ${vente.montant_ttc
+          `Montant TTC : ${(vente.montant_ttc || 0)
             .toString()
             .replace(/\B(?=(\d{3})+(?!\d))/g, " ")} FCFA`,
           20,
@@ -1444,45 +1444,72 @@ export default function DetailVoyage() {
       // 7. CRÉER LE TOKEN DE PAIEMENT (avant le subscribe)
       console.log("🔑 Création du token de paiement...");
 
-      // let paymentToken = null;
-      // try {
-      //   // TODO: Remplacer par vos vraies informations API
-      //   const tokenResponse = await fetch(
-      //     "https://api.mypvit.pro/KJNXIKF8JNNSVENJ/renew-secret",
-      //     {
-      //       method: "POST",
-      //       headers: {
-      //         "Content-Type": "application/x-www-form-urlencoded",
-      //         "X-Secret-MediaType": "string",
-      //         Accept: "application/json",
-      //         "X-Secret": process.env.REACT_APP_X_SECRET,
-      //       },
-      //       body: JSON.stringify({
-      //         operationAccountCode:
-      //           process.env.REACT_APP_OPERATION_ACCOUNT_CODE,
-      //         receptionUrlCode: process.env.REACT_APP_RECEPTION_URL_CODE,
-      //         password: process.env.REACT_APP_PASSWORD,
-      //       }),
-      //     }
-      //   );
+      // Trouver le premier passager adulte
+      const premierAdulte = reservationForm.passagers.find(
+        (p) => p.type_passager === "Adulte"
+      );
 
-      //   if (!tokenResponse.ok) {
-      //     throw new Error("Erreur lors de la création du token");
-      //   }
+      if (!premierAdulte) {
+        throw new Error("Aucun passager adulte trouvé pour le paiement");
+      }
 
-      //   const tokenData = await tokenResponse.json();
-      //   paymentToken = tokenData.token; // Adapter selon la structure de votre réponse
+      let paymentToken = null;
+      try {
+        // TODO: Remplacer par vos vraies informations API
+        const tokenResponse = await fetch(
+          `${process.env.REACT_APP_API_URL_BASE}/api/payment/initiate`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              "X-Secret-MediaType": "string",
+              Accept: "application/json",
+              "X-API-Key": process.env.REACT_APP_FRONTEND_API_KEY,
+            },
+            body: JSON.stringify({
+              phoneNumber: premierAdulte.telephone || "",
+              amount: montantTotal || 0,
+              reference: reservationId,
+            }),
+          }
+        );
 
-      //   console.log("✅ Token créé avec succès:", paymentToken);
-      // } catch (error) {
-      //   console.error("❌ Erreur création token:", error);
-      //   alert(
-      //     "Erreur lors de la création du token de paiement. Veuillez réessayer."
-      //   );
-      //   setIsSubmitting(false);
-      //   return;
-      // }
-      // let timerInterval;
+        if (!tokenResponse.ok) {
+          const errorData = await tokenResponse.json();
+          console.error("❌ Erreur API:", {
+            status: tokenResponse.status,
+            statusText: tokenResponse.statusText,
+            errorCode: errorData.error,
+            message: errorData.message,
+            fullResponse: errorData,
+          });
+
+          const errorMessage =
+            errorData.error === "TOKEN_RENEWAL_TIMEOUT"
+              ? `${errorData.message}\n\nCode erreur: ${errorData.error}`
+              : errorData.message || "Erreur lors de la création du token";
+
+          throw new Error(errorMessage);
+        }
+
+        // const tokenData = await tokenResponse.json();
+        // paymentToken = tokenData.token; // Adapter selon la structure de votre réponse
+
+        console.log("✅ Token créé avec succès:", paymentToken);
+      } catch (error) {
+        console.error("❌ Erreur création token:", error);
+
+        // Afficher un message détaillé à l'utilisateur
+        const errorMessage = error?.message || "Erreur inconnue";
+        const userMessage = errorMessage.includes("TOKEN_RENEWAL_TIMEOUT")
+          ? errorMessage
+          : `Erreur lors de la création du token de paiement.\n\n${errorMessage}\n\nVeuillez réessayer.`;
+
+        alert(userMessage);
+        setIsSubmitting(false);
+        return;
+      }
+      let timerInterval;
       // 8. Informer l'utilisateur que la réservation est en attente de paiement
       Swal.fire({
         title: "Paiement en cours...",

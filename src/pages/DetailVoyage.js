@@ -1475,19 +1475,33 @@ export default function DetailVoyage() {
         );
 
         if (!tokenResponse.ok) {
-          const errorData = await tokenResponse.json();
+          let errorData = null;
+          let errorMessage = "Erreur lors de la création du token";
+
+          try {
+            // Tenter de parser la réponse en JSON
+            const responseText = await tokenResponse.text();
+            console.log("📄 Réponse brute de l'API:", responseText);
+
+            if (responseText) {
+              errorData = JSON.parse(responseText);
+              errorMessage =
+                errorData.error === "TOKEN_RENEWAL_TIMEOUT"
+                  ? `${errorData.message}\n\nCode erreur: ${errorData.error}`
+                  : errorData.message || errorMessage;
+            }
+          } catch (parseError) {
+            console.error("❌ Impossible de parser la réponse JSON:", parseError);
+            errorMessage = `Erreur ${tokenResponse.status}: ${tokenResponse.statusText}`;
+          }
+
           console.error("❌ Erreur API:", {
             status: tokenResponse.status,
             statusText: tokenResponse.statusText,
-            errorCode: errorData.error,
-            message: errorData.message,
+            errorCode: errorData?.error,
+            message: errorData?.message,
             fullResponse: errorData,
           });
-
-          const errorMessage =
-            errorData.error === "TOKEN_RENEWAL_TIMEOUT"
-              ? `${errorData.message}\n\nCode erreur: ${errorData.error}`
-              : errorData.message || "Erreur lors de la création du token";
 
           throw new Error(errorMessage);
         }

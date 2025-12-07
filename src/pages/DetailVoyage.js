@@ -1490,13 +1490,11 @@ export default function DetailVoyage() {
       let paymentToken = null;
       try {
         const tokenResponse = await fetch(
-          `${process.env.REACT_APP_API_URL_BASE}/api/payment/initiate`,
+          `https://nat-voyages-back-end.onrender.com/api/payment/initiate`,
           {
             method: "POST",
             headers: {
               "Content-Type": "application/x-www-form-urlencoded",
-              "X-Secret-MediaType": "string",
-              Accept: "application/json",
               "X-API-Key": process.env.REACT_APP_FRONTEND_API_KEY,
             },
             body: JSON.stringify({

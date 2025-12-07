@@ -1482,9 +1482,9 @@ export default function DetailVoyage() {
 
       console.log("📱 Informations de paiement:", {
         phoneNumber: reservationForm.numero_paiement_mobile,
-        operator: operatorCode,
+        operatorCode: operatorCode,
         amount: montantTotal,
-        reservationId: reservationId
+        reservationId: reservationId,
       });
 
       let paymentToken = null;

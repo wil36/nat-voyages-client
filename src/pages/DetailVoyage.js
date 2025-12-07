@@ -1491,7 +1491,10 @@ export default function DetailVoyage() {
                   : errorData.message || errorMessage;
             }
           } catch (parseError) {
-            console.error("❌ Impossible de parser la réponse JSON:", parseError);
+            console.error(
+              "❌ Impossible de parser la réponse JSON:",
+              parseError
+            );
             errorMessage = `Erreur ${tokenResponse.status}: ${tokenResponse.statusText}`;
           }
 
@@ -1513,13 +1516,42 @@ export default function DetailVoyage() {
       } catch (error) {
         console.error("❌ Erreur création token:", error);
 
+        // Mettre à jour le statut de toutes les ventes à "Échoué"
+        try {
+          const failedUpdate = [];
+          for (const vente of result.ventes) {
+            const venteRef = doc(db, "ventes", vente.id);
+            failedUpdate.push(
+              updateDoc(venteRef, {
+                status: "Echouer",
+                paymentPending: false,
+                failureReason:
+                  error?.message || "Erreur lors de la création du token",
+                failureTime: serverTimestamp(),
+              })
+            );
+          }
+          await Promise.all(failedUpdate);
+          console.log("✅ Statut des ventes mis à jour: Échoué");
+        } catch (updateError) {
+          console.error(
+            "❌ Erreur lors de la mise à jour du statut:",
+            updateError
+          );
+        }
+
         // Afficher un message détaillé à l'utilisateur
         const errorMessage = error?.message || "Erreur inconnue";
         const userMessage = errorMessage.includes("TOKEN_RENEWAL_TIMEOUT")
           ? errorMessage
           : `Erreur lors de la création du token de paiement.\n\n${errorMessage}\n\nVeuillez réessayer.`;
 
-        alert(userMessage);
+        Swal.fire({
+          icon: "error",
+          title: "Erreur !",
+          text: "Une erreur est survenue lors de votre paiement. Veuillez réessayer.",
+        });
+
         setIsSubmitting(false);
         return;
       }
@@ -1587,45 +1619,17 @@ export default function DetailVoyage() {
                 paymentInitiated: true,
                 paymentInitiatedAt: new Date().toISOString(),
               });
+            }
 
-              // REQUÊTE HTTP POUR INITIER LE PAIEMENT
-              // fetch("YOUR_PAYMENT_API_URL/initiate-payment", {
-              //   method: "POST",
-              //   headers: {
-              //     "Content-Type": "application/json",
-              //     // TODO: Ajouter vos headers d'authentification
-              //     // "Authorization": "Bearer YOUR_API_KEY",
-              //     // "X-Payment-Token": paymentToken,
-              //   },
-              //   body: JSON.stringify({
-              //     // TODO: Adapter selon votre API
-              //     reservationId: reservationId,
-              //     token: paymentToken,
-              //     amount: montantTotal,
-              //     phoneNumber: reservationForm.passagers[0].telephone,
-              //     customerName: `${reservationForm.passagers[0].prenom} ${reservationForm.passagers[0].nom}`,
-              //     reference: reservationId,
-              //     // Ajouter d'autres paramètres requis par votre API
-              //   }),
-              // })
-              //   .then((response) => {
-              //     if (!response.ok) {
-              //       throw new Error("Erreur lors de l'initiation du paiement");
-              //     }
-              //     return response.json();
-              //   })
-              //   .then((data) => {
-              //     console.log("✅ Paiement initié avec succès:", data);
-              //     // TODO: Traiter la réponse selon votre API
-              //     // Par exemple, afficher un message à l'utilisateur
-              //   })
-              //   .catch((error) => {
-              //     Swal.fire({
-              //       icon: "error",
-              //       title: "Erreur !",
-              //       text: "Erreur lors de l'initiation du paiement. Veuillez réessayer.",
-              //     });
-              //   });
+            if (venteData.status === "Echouer") {
+              Swal.close();
+              Swal.fire({
+                title: "Paiement echoué!",
+                text: "Vos billets n'ont pas été générés.",
+                icon: "error",
+                timer: 3000,
+                showConfirmButton: false,
+              }).then({});
             }
 
             // Si le statut passe à "Payer", générer les billets

@@ -1489,20 +1489,23 @@ export default function DetailVoyage() {
 
       let paymentToken = null;
       try {
+        // Créer les paramètres au format URL-encoded
+        const params = new URLSearchParams();
+        params.append('phoneNumber', reservationForm.numero_paiement_mobile);
+        params.append('amount', montantTotal || 0);
+        params.append('operatorCode', operatorCode);
+        params.append('reservationId', reservationId);
+
         const tokenResponse = await fetch(
-          `https://nat-voyages-back-end.onrender.com/api/payment/initiate`,
+          "https://nat-voyages-back-end.onrender.com/api/payment/initiate",
           {
             method: "POST",
             headers: {
               "Content-Type": "application/x-www-form-urlencoded",
               "X-API-Key": process.env.REACT_APP_FRONTEND_API_KEY,
+              accept: "application/json",
             },
-            body: JSON.stringify({
-              phoneNumber: reservationForm.numero_paiement_mobile,
-              amount: montantTotal || 0,
-              operator_code: operatorCode,
-              reservationId: reservationId,
-            }),
+            body: params.toString(),
           }
         );
 

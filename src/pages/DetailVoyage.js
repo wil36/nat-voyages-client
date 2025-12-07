@@ -33,6 +33,7 @@ export default function DetailVoyage() {
   // État pour le formulaire de billet avec plusieurs passagers
   const [reservationForm, setReservationForm] = useState({
     type_voyage: "aller_simple", // aller_simple ou aller_retour
+    numero_paiement_mobile: "", // Numéro pour le paiement mobile money
     trajets_selectionnes: [], // tableau des indices des trajets sélectionnés - commun à tous
     voyage_retour_id: "", // ID du voyage de retour sélectionné
     passagers: [
@@ -614,6 +615,23 @@ export default function DetailVoyage() {
     return true;
   };
 
+  // Fonction pour déterminer l'opérateur à partir du numéro de téléphone
+  const getOperatorCode = (phoneNumber) => {
+    if (!phoneNumber) return null;
+
+    // Supprimer les espaces
+    const cleanNumber = phoneNumber.replace(/\s/g, "");
+
+    // Vérifier le préfixe
+    if (cleanNumber.startsWith("07")) {
+      return "AIRTEL_MONEY";
+    } else if (cleanNumber.startsWith("06")) {
+      return "MOOV_MONEY";
+    }
+
+    return null;
+  };
+
   // Fonction de validation des champs obligatoires pour plusieurs passagers
   const validateForm = () => {
     const newErrors = {};
@@ -621,6 +639,17 @@ export default function DetailVoyage() {
     // Vérifier la sélection des trajets (commun à tous)
     if (reservationForm.trajets_selectionnes.length === 0) {
       newErrors.trajets = "Vous devez sélectionner au moins un trajet";
+    }
+
+    // Vérifier le numéro de paiement mobile
+    if (!reservationForm.numero_paiement_mobile.trim()) {
+      newErrors.numero_paiement_mobile = "Le numéro de paiement Mobile Money est obligatoire";
+    } else {
+      // Vérifier le format: doit commencer par 07 (Airtel) ou 06 (Moov) et avoir 9 chiffres
+      const numeroPattern = /^(07|06)\d{7}$/;
+      if (!numeroPattern.test(reservationForm.numero_paiement_mobile)) {
+        newErrors.numero_paiement_mobile = "Le numéro doit commencer par 07 (Airtel) ou 06 (Moov) et contenir 9 chiffres";
+      }
     }
 
     // Vérifier le voyage de retour si aller-retour
@@ -1444,18 +1473,22 @@ export default function DetailVoyage() {
       // 7. CRÉER LE TOKEN DE PAIEMENT (avant le subscribe)
       console.log("🔑 Création du token de paiement...");
 
-      // Trouver le premier passager adulte
-      const premierAdulte = reservationForm.passagers.find(
-        (p) => p.type_passager === "Adulte"
-      );
+      // Déterminer l'opérateur à partir du numéro de paiement
+      const operatorCode = getOperatorCode(reservationForm.numero_paiement_mobile);
 
-      if (!premierAdulte) {
-        throw new Error("Aucun passager adulte trouvé pour le paiement");
+      if (!operatorCode) {
+        throw new Error("Impossible de déterminer l'opérateur à partir du numéro");
       }
+
+      console.log("📱 Informations de paiement:", {
+        phoneNumber: reservationForm.numero_paiement_mobile,
+        operator: operatorCode,
+        amount: montantTotal,
+        reservationId: reservationId
+      });
 
       let paymentToken = null;
       try {
-        // TODO: Remplacer par vos vraies informations API
         const tokenResponse = await fetch(
           `${process.env.REACT_APP_API_URL_BASE}/api/payment/initiate`,
           {
@@ -1467,9 +1500,10 @@ export default function DetailVoyage() {
               "X-API-Key": process.env.REACT_APP_FRONTEND_API_KEY,
             },
             body: JSON.stringify({
-              phoneNumber: premierAdulte.telephone || "",
+              phoneNumber: reservationForm.numero_paiement_mobile,
               amount: montantTotal || 0,
-              reference: reservationId,
+              operator_code: operatorCode,
+              reservationId: reservationId,
             }),
           }
         );
@@ -2305,6 +2339,37 @@ export default function DetailVoyage() {
                       </div>
                     </div>
                   </div>
+                </div>
+
+                {/* Champ Numéro de paiement mobile */}
+                <div className="form-group mb-4">
+                  <label className="form-label h6">
+                    Numéro de paiement Mobile Money
+                    <span className="text-danger">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    className={`form-control ${
+                      errors.numero_paiement_mobile ? "is-invalid" : ""
+                    }`}
+                    placeholder="Ex: 07XXXXXXX (Airtel) ou 06XXXXXXX (Moov)"
+                    value={reservationForm.numero_paiement_mobile}
+                    onChange={(e) =>
+                      setReservationForm({
+                        ...reservationForm,
+                        numero_paiement_mobile: e.target.value,
+                      })
+                    }
+                    required
+                  />
+                  {errors.numero_paiement_mobile && (
+                    <div className="invalid-feedback">
+                      {errors.numero_paiement_mobile}
+                    </div>
+                  )}
+                  <small className="form-text text-muted">
+                    Format: 07XXXXXXX pour Airtel Money ou 06XXXXXXX pour Moov Money
+                  </small>
                 </div>
 
                 {/* Sélection du voyage de retour si aller-retour */}

@@ -1491,10 +1491,10 @@ export default function DetailVoyage() {
       try {
         // Créer les paramètres au format URL-encoded
         const params = new URLSearchParams();
-        params.append('phoneNumber', reservationForm.numero_paiement_mobile);
-        params.append('amount', montantTotal || 0);
-        params.append('operatorCode', operatorCode);
-        params.append('reservationId', reservationId);
+        params.append("phoneNumber", reservationForm.numero_paiement_mobile);
+        params.append("amount", montantTotal || 0);
+        params.append("operatorCode", operatorCode);
+        params.append("reservationId", reservationId);
 
         const tokenResponse = await fetch(
           "https://nat-voyages-back-end.onrender.com/api/payment/initiate",

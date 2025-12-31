@@ -1497,7 +1497,7 @@ export default function DetailVoyage() {
         params.append("reservationId", reservationId);
 
         const tokenResponse = await fetch(
-          "https://nat-voyages-back-end.onrender.com/api/payment/initiate",
+          `${process.env.REACT_APP_API_URL_BASE}/api/payment/initiate`,
           {
             method: "POST",
             headers: {

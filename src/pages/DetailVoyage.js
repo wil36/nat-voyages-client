@@ -873,6 +873,9 @@ export default function DetailVoyage() {
     rateLimit.recordAttempt();
 
     try {
+      // Référence du voyage
+      const voyageRef = doc(db, "voyages", location.state.voyageId);
+
       // Vérifier la disponibilité des places en temps réel
       const { voyageData, placesNecessaires } = await verifierDisponibilite();
 
@@ -883,36 +886,27 @@ export default function DetailVoyage() {
       ];
 
       // Pré-traitement : vérifier tous les clients en dehors de la transaction
-      const clientsData = [];
-      for (const passager of passagersOrdonnes) {
-        const clientsQuery = query(
-          collection(db, "clients"),
-          where("type_piece", "==", passager.type_piece),
-          where("numero_piece", "==", passager.numero_piece)
-        );
-        const clientsSnapshot = await getDocs(clientsQuery);
-        clientsData.push({
-          passager,
-          existingClientId: clientsSnapshot.empty
-            ? null
-            : clientsSnapshot.docs[0].id,
-        });
-      }
+      const clientsData = await Promise.all(
+        passagersOrdonnes.map(async (passager) => {
+          const clientsQuery = query(
+            collection(db, "clients"),
+            where("type_piece", "==", passager.type_piece),
+            where("numero_piece", "==", passager.numero_piece),
+          );
+          const snapshot = await getDocs(clientsQuery);
+          return {
+            passager,
+            existingClientId: snapshot.empty ? null : snapshot.docs[0].id,
+          };
+        }),
+      );
 
       // Utilisation d'une transaction atomique Firebase
       const result = await runTransaction(db, async (transaction) => {
         const ventes = [];
-        const voyageRef = doc(db, "voyages", location.state.voyageId);
-        let premierAdulteTicketId = null; // Pour les bébés
-
-        // 1. TOUTES LES LECTURES D'ABORD - Double vérification des places
-        const voyageDoc = await transaction.get(voyageRef);
-        if (!voyageDoc.exists()) {
-          throw new Error("Voyage introuvable");
-        }
-
-        const currentVoyageData = voyageDoc.data();
+        const currentVoyageData = voyageData;
         let currentVoyageRetourData = null;
+        let premierAdulteTicketId = null;
 
         // Récupérer les informations du bateau à partir de bateau_reference
         let bateauData = null;
@@ -931,7 +925,7 @@ export default function DetailVoyage() {
           const voyageRetourRef = doc(
             db,
             "voyages",
-            reservationForm.voyage_retour_id
+            reservationForm.voyage_retour_id,
           );
           const voyageRetourDoc = await transaction.get(voyageRetourRef);
 
@@ -951,20 +945,20 @@ export default function DetailVoyage() {
 
         if (placesNecessaires.Economie > placesDispoEcoActuelles) {
           throw new Error(
-            `Plus assez de places Économie disponibles (${placesNecessaires.Economie} demandées, ${placesDispoEcoActuelles} disponibles)`
+            `Plus assez de places Économie disponibles (${placesNecessaires.Economie} demandées, ${placesDispoEcoActuelles} disponibles)`,
           );
         }
 
         if (placesNecessaires.VIP > placesDispoVipActuelles) {
           throw new Error(
-            `Plus assez de places VIP disponibles (${placesNecessaires.VIP} demandées, ${placesDispoVipActuelles} disponibles)`
+            `Plus assez de places VIP disponibles (${placesNecessaires.VIP} demandées, ${placesDispoVipActuelles} disponibles)`,
           );
         }
         // Récupérer les informations du bateau retour si nécessaire
         let bateauRetourData = null;
         if (currentVoyageRetourData && currentVoyageRetourData.bateau) {
           const bateauRetourDoc = await transaction.get(
-            currentVoyageRetourData.bateau
+            currentVoyageRetourData.bateau,
           );
           if (bateauRetourDoc.exists()) {
             bateauRetourData = bateauRetourDoc.data();
@@ -982,13 +976,13 @@ export default function DetailVoyage() {
 
           if (placesNecessaires.Economie > placesDispoEcoRetour) {
             throw new Error(
-              `Plus assez de places Économie pour le retour (${placesNecessaires.Economie} demandées, ${placesDispoEcoRetour} disponibles)`
+              `Plus assez de places Économie pour le retour (${placesNecessaires.Economie} demandées, ${placesDispoEcoRetour} disponibles)`,
             );
           }
 
           if (placesNecessaires.VIP > placesDispoVipRetour) {
             throw new Error(
-              `Plus assez de places VIP pour le retour (${placesNecessaires.VIP} demandées, ${placesDispoVipRetour} disponibles)`
+              `Plus assez de places VIP pour le retour (${placesNecessaires.VIP} demandées, ${placesDispoVipRetour} disponibles)`,
             );
           }
         }
@@ -1007,7 +1001,7 @@ export default function DetailVoyage() {
           const voyageRetourRef = doc(
             db,
             "voyages",
-            reservationForm.voyage_retour_id
+            reservationForm.voyage_retour_id,
           );
           transaction.update(voyageRetourRef, {
             place_prise_eco:
@@ -1075,7 +1069,7 @@ export default function DetailVoyage() {
               montantPassagerAller += obtenirTarifTrajet(
                 trajet,
                 passager.type_passager,
-                passager.classe
+                passager.classe,
               );
             }
           });
@@ -1089,7 +1083,7 @@ export default function DetailVoyage() {
           (reservationForm.trajets_selectionnes || []).map((index) =>
             voyage?.trajet && voyage.trajet[index]
               ? console.log(voyage.trajet[index])
-              : console.log("Trajet non trouvé")
+              : console.log("Trajet non trouvé"),
           );
           // Enregistrer la vente pour l'aller
           // Convertir le Timestamp Firestore en objet Date JavaScript
@@ -1121,7 +1115,9 @@ export default function DetailVoyage() {
             type_bateau: bateauData?.type_bateau || "",
             bateau_reference: currentVoyageData.bateau || "",
             trajet: (reservationForm.trajets_selectionnes || []).map((index) =>
-              voyage?.trajet && voyage.trajet[index] ? voyage.trajet[index] : {}
+              voyage?.trajet && voyage.trajet[index]
+                ? voyage.trajet[index]
+                : {},
             ),
             client_reference: doc(db, "clients", clientReference) || "",
             client_name: `${passager.prenom || ""} ${
@@ -1132,7 +1128,7 @@ export default function DetailVoyage() {
               doc(
                 db,
                 "users",
-                process.env.REACT_APP_STATIC_ID_AGENT_NAT_VOYAGE
+                process.env.REACT_APP_STATIC_ID_AGENT_NAT_VOYAGE,
               ) || "",
             agent_name: "Nat Voyage System",
             sexe_client: passager.sexe || "",
@@ -1144,7 +1140,7 @@ export default function DetailVoyage() {
               doc(
                 db,
                 "agences",
-                process.env.REACT_APP_STATIC_ID_AGENCE_NAT_VOYAGE
+                process.env.REACT_APP_STATIC_ID_AGENCE_NAT_VOYAGE,
               ) || "",
             agence_vente_name: "Nat Voyage System",
             type_passager: passager.type_passager || "",
@@ -1238,7 +1234,7 @@ export default function DetailVoyage() {
           });
 
           const transactionAllerDocRef = doc(
-            collection(db, "ventes", venteAllerDocRef.id, "transactions_vente")
+            collection(db, "ventes", venteAllerDocRef.id, "transactions_vente"),
           );
           transaction.set(transactionAllerDocRef, transactionAllerData);
 
@@ -1263,7 +1259,7 @@ export default function DetailVoyage() {
                 montantPassagerRetour += obtenirTarifTrajet(
                   trajetRetour,
                   passager.type_passager,
-                  passager.classe
+                  passager.classe,
                 );
               });
             }
@@ -1277,7 +1273,7 @@ export default function DetailVoyage() {
             const voyageRetourRef = doc(
               db,
               "voyages",
-              reservationForm.voyage_retour_id
+              reservationForm.voyage_retour_id,
             );
             console.log(voyageRetourSelectionne?.trajet);
 
@@ -1322,14 +1318,14 @@ export default function DetailVoyage() {
                 doc(
                   db,
                   "users",
-                  "" + process.env.REACT_APP_STATIC_ID_AGENT_NAT_VOYAGE
+                  "" + process.env.REACT_APP_STATIC_ID_AGENT_NAT_VOYAGE,
                 ) || "",
               agent_name: "Nat Voyage System",
               agence_vente_reference:
                 doc(
                   db,
                   "agences",
-                  "" + process.env.REACT_APP_STATIC_ID_AGENCE_NAT_VOYAGE
+                  "" + process.env.REACT_APP_STATIC_ID_AGENCE_NAT_VOYAGE,
                 ) || "",
               agence_vente_name: "Nat Voyage System",
               sexe_client: passager.sexe || "",
@@ -1432,8 +1428,8 @@ export default function DetailVoyage() {
                 db,
                 "ventes",
                 venteRetourDocRef.id,
-                "transactions_vente"
-              )
+                "transactions_vente",
+              ),
             );
             transaction.set(transactionRetourDocRef, transactionRetourData);
 
@@ -1463,7 +1459,7 @@ export default function DetailVoyage() {
             reservationId: reservationId,
             status: "En attente", // En attente du paiement
             paymentPending: true,
-          })
+          }),
         );
       }
       await Promise.all(batchUpdate);
@@ -1474,10 +1470,14 @@ export default function DetailVoyage() {
       console.log("🔑 Création du token de paiement...");
 
       // Déterminer l'opérateur à partir du numéro de paiement
-      const operatorCode = getOperatorCode(reservationForm.numero_paiement_mobile);
+      const operatorCode = getOperatorCode(
+        reservationForm.numero_paiement_mobile,
+      );
 
       if (!operatorCode) {
-        throw new Error("Impossible de déterminer l'opérateur à partir du numéro");
+        throw new Error(
+          "Impossible de déterminer l'opérateur à partir du numéro",
+        );
       }
 
       console.log("📱 Informations de paiement:", {
@@ -1506,7 +1506,7 @@ export default function DetailVoyage() {
               accept: "application/json",
             },
             body: params.toString(),
-          }
+          },
         );
 
         if (!tokenResponse.ok) {
@@ -1528,7 +1528,7 @@ export default function DetailVoyage() {
           } catch (parseError) {
             console.error(
               "❌ Impossible de parser la réponse JSON:",
-              parseError
+              parseError,
             );
             errorMessage = `Erreur ${tokenResponse.status}: ${tokenResponse.statusText}`;
           }
@@ -1563,7 +1563,7 @@ export default function DetailVoyage() {
                 failureReason:
                   error?.message || "Erreur lors de la création du token",
                 failureTime: serverTimestamp(),
-              })
+              }),
             );
           }
           await Promise.all(failedUpdate);
@@ -1571,7 +1571,7 @@ export default function DetailVoyage() {
         } catch (updateError) {
           console.error(
             "❌ Erreur lors de la mise à jour du statut:",
-            updateError
+            updateError,
           );
         }
 
@@ -1636,7 +1636,7 @@ export default function DetailVoyage() {
       // 8. Écouter les changements de statut en temps réel via Firestore
       const ventesQuery = query(
         collection(db, "ventes"),
-        where("reservationId", "==", reservationId)
+        where("reservationId", "==", reservationId),
       );
 
       const unsubscribe = onSnapshot(ventesQuery, (snapshot) => {

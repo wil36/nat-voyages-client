@@ -99,10 +99,10 @@ export default function DetailVoyage() {
 
       // Extraire les trajets sélectionnés par l'utilisateur dans le bon ordre
       const indicesTriés = [...reservationForm.trajets_selectionnes].sort(
-        (a, b) => a - b
+        (a, b) => a - b,
       );
       const trajetsSelectionnes = indicesTriés.map(
-        (index) => voyageAller.trajet[index]
+        (index) => voyageAller.trajet[index],
       );
 
       if (trajetsSelectionnes.length === 0) {
@@ -116,12 +116,12 @@ export default function DetailVoyage() {
         if (index === 0) {
           // Premier trajet : ajouter départ et arrivée
           sequenceVillesAller.push(
-            trajet?.LieuDeDepartLibelle || trajet?.lieu_depart
+            trajet?.LieuDeDepartLibelle || trajet?.lieu_depart,
           );
         }
         // Ajouter toujours l'arrivée
         sequenceVillesAller.push(
-          trajet?.LieuDArriverLibelle || trajet?.lieu_arrivee
+          trajet?.LieuDArriverLibelle || trajet?.lieu_arrivee,
         );
       });
 
@@ -154,12 +154,12 @@ export default function DetailVoyage() {
           if (index === 0) {
             // Premier trajet : ajouter départ et arrivée
             sequenceVoyageRetour.push(
-              trajet?.LieuDeDepartLibelle || trajet?.lieu_depart
+              trajet?.LieuDeDepartLibelle || trajet?.lieu_depart,
             );
           }
           // Ajouter toujours l'arrivée
           sequenceVoyageRetour.push(
-            trajet?.LieuDArriverLibelle || trajet?.lieu_arrivee
+            trajet?.LieuDArriverLibelle || trajet?.lieu_arrivee,
           );
         });
 
@@ -174,7 +174,7 @@ export default function DetailVoyage() {
 
             const villeSuivante = sequenceVillesRetour[index + 1];
             return sequenceVoyageRetour[villeIndex + 1] === villeSuivante;
-          }
+          },
         );
 
         return containsReturnSequence;
@@ -184,7 +184,7 @@ export default function DetailVoyage() {
     } catch (error) {
       console.error(
         "Erreur lors de la récupération des voyages de retour:",
-        error
+        error,
       );
       setVoyagesRetour([]);
     } finally {
@@ -254,7 +254,7 @@ export default function DetailVoyage() {
     setReservationForm((prev) => ({
       ...prev,
       passagers: prev.passagers.map((passager) =>
-        passager.id === passagerId ? { ...passager, [field]: value } : passager
+        passager.id === passagerId ? { ...passager, [field]: value } : passager,
       ),
     }));
   };
@@ -288,7 +288,7 @@ export default function DetailVoyage() {
   const genererFacturePDF = async (
     venteId,
     donneesVente,
-    previewOnly = false
+    previewOnly = false,
   ) => {
     const doc = new jsPDF("landscape"); // Mode paysage
 
@@ -307,7 +307,7 @@ export default function DetailVoyage() {
     doc.text(
       `Agence: ${donneesVente.agence_name || "Agence Principale"}`,
       20,
-      28
+      28,
     );
     doc.text("Tél: +225 XX XX XX XX", 20, 34);
     doc.text("Email: contact@natvoyage.ci", 20, 40);
@@ -347,12 +347,12 @@ export default function DetailVoyage() {
     doc.text(
       `Numéro de référence : ${donneesVente.numero_billet || venteId}`,
       20,
-      112
+      112,
     );
     doc.text(
       `Nom et prénom du passager : ${donneesVente.prenoms} ${donneesVente.noms}`,
       20,
-      118
+      118,
     );
     doc.text(`Tel : ${donneesVente.tel}`, 20, 124);
     doc.text(`Type de passager : ${donneesVente.type_passager}`, 20, 130);
@@ -361,7 +361,7 @@ export default function DetailVoyage() {
     doc.text(
       `Montant TTC : ${donneesVente.montant_ttc.toLocaleString("fr-FR")} FCFA`,
       20,
-      142
+      142,
     );
     doc.setFont("helvetica", "normal");
     doc.text(`Encaissé par : Système NAT VOYAGE`, 20, 148);
@@ -439,7 +439,7 @@ export default function DetailVoyage() {
 
     let pageCount = 0;
     for (const [passagerKey, ventesPassager] of Object.entries(
-      passagersGroup
+      passagersGroup,
     )) {
       const passagerIndex = Object.keys(passagersGroup).indexOf(passagerKey);
 
@@ -520,7 +520,7 @@ export default function DetailVoyage() {
         doc.text(
           `Moyen de transport : ${vente?.type_bateau_libelle || "N/A"}`,
           20,
-          90
+          90,
         );
 
         doc.text("Franchise de bagage : 20kgs", 20, 96);
@@ -532,12 +532,12 @@ export default function DetailVoyage() {
         doc.text(
           `Numéro de référence : ${vente.numero_billet || vente.id}`,
           20,
-          112
+          112,
         );
         doc.text(
           `Nom et prénom du passager : ${vente.prenoms} ${vente.noms}`,
           20,
-          118
+          118,
         );
         doc.text(`Tel : ${vente.tel}`, 20, 124);
         doc.text(`Type de passager : ${vente.type_passager}`, 20, 130);
@@ -548,7 +548,7 @@ export default function DetailVoyage() {
             .toString()
             .replace(/\B(?=(\d{3})+(?!\d))/g, " ")} FCFA`,
           20,
-          142
+          142,
         );
         doc.setFont("helvetica", "normal");
         doc.text(`Encaissé par : Système NAT VOYAGE`, 20, 148);
@@ -566,7 +566,7 @@ export default function DetailVoyage() {
         doc.text(
           "Pénalité changement de date : à partir de 5000 FCFA",
           20,
-          183
+          183,
         );
         doc.text("Pénalité départ manqué : 8000 FCFA", 20, 189);
         doc.text("Pénalité autre modification : 5000 FCFA", 20, 195);
@@ -643,12 +643,14 @@ export default function DetailVoyage() {
 
     // Vérifier le numéro de paiement mobile
     if (!reservationForm.numero_paiement_mobile.trim()) {
-      newErrors.numero_paiement_mobile = "Le numéro de paiement Mobile Money est obligatoire";
+      newErrors.numero_paiement_mobile =
+        "Le numéro de paiement Mobile Money est obligatoire";
     } else {
       // Vérifier le format: doit commencer par 07 (Airtel) ou 06 (Moov) et avoir 9 chiffres
       const numeroPattern = /^(07|06)\d{7}$/;
       if (!numeroPattern.test(reservationForm.numero_paiement_mobile)) {
-        newErrors.numero_paiement_mobile = "Le numéro doit commencer par 07 (Airtel) ou 06 (Moov) et contenir 9 chiffres";
+        newErrors.numero_paiement_mobile =
+          "Le numéro doit commencer par 07 (Airtel) ou 06 (Moov) et contenir 9 chiffres";
       }
     }
 
@@ -666,16 +668,16 @@ export default function DetailVoyage() {
 
     // Compter les adultes et bébés
     const adultes = reservationForm.passagers.filter(
-      (p) => p.type_passager === "Adulte"
+      (p) => p.type_passager === "Adulte",
     );
     const bebes = reservationForm.passagers.filter(
-      (p) => p.type_passager === "Bébé"
+      (p) => p.type_passager === "Bébé",
     );
 
     // Vérifier qu'il y a au moins un adulte si des bébés sont présents
     if (bebes.length > 0 && adultes.length === 0) {
       alert(
-        "❌ Il doit y avoir au moins un adulte pour accompagner les bébés !"
+        "❌ Il doit y avoir au moins un adulte pour accompagner les bébés !",
       );
       return false;
     }
@@ -772,7 +774,7 @@ export default function DetailVoyage() {
           prixPassagerTotal += obtenirTarifTrajet(
             trajet,
             passager.type_passager,
-            passager.classe
+            passager.classe,
           );
         }
       });
@@ -787,7 +789,7 @@ export default function DetailVoyage() {
           prixPassagerTotal += obtenirTarifTrajet(
             trajetRetour,
             passager.type_passager,
-            passager.classe
+            passager.classe,
           );
         });
       }
@@ -829,13 +831,13 @@ export default function DetailVoyage() {
 
     if (placesNecessaires.Economie > placesDispoEco) {
       throw new Error(
-        `Pas assez de places en classe Économie (${placesNecessaires.Economie} demandées, ${placesDispoEco} disponibles)`
+        `Pas assez de places en classe Économie (${placesNecessaires.Economie} demandées, ${placesDispoEco} disponibles)`,
       );
     }
 
     if (placesNecessaires.VIP > placesDispoVip) {
       throw new Error(
-        `Pas assez de places en classe VIP (${placesNecessaires.VIP} demandées, ${placesDispoVip} disponibles)`
+        `Pas assez de places en classe VIP (${placesNecessaires.VIP} demandées, ${placesDispoVip} disponibles)`,
       );
     }
 
@@ -857,13 +859,21 @@ export default function DetailVoyage() {
           `Vous avez dépassé la limite de 3 tentatives en 10 secondes.\n\n` +
           `⏱️ Temps restant avant déblocage: ${minutes}m ${seconds}s\n\n` +
           `Cette mesure de sécurité protège le système contre les abus.\n` +
-          `Veuillez patienter avant de réessayer.`
+          `Veuillez patienter avant de réessayer.`,
       );
       return;
     }
 
     // Validation avant soumission
     if (!validateForm()) {
+      return;
+    }
+
+    // Vérification du montant minimum
+    if (montantTotal < 500) {
+      alert(
+        `Le montant total (${montantTotal.toLocaleString("fr-FR")} FCFA) est insuffisant.\n\nLe montant minimum pour effectuer une réservation est de 500 FCFA.`,
+      );
       return;
     }
 
@@ -1490,11 +1500,18 @@ export default function DetailVoyage() {
       let paymentToken = null;
       try {
         // Créer les paramètres au format URL-encoded
+        // Inclure la clé API dans le body pour éviter le preflight CORS
         const params = new URLSearchParams();
         params.append("phoneNumber", reservationForm.numero_paiement_mobile);
         params.append("amount", montantTotal || 0);
+        // params.append("amount", 500);
         params.append("operatorCode", operatorCode);
         params.append("reservationId", reservationId);
+        params.append("apiKey", process.env.REACT_APP_FRONTEND_API_KEY);
+
+        // AbortController avec timeout de 60 secondes (l'API de paiement peut être lente)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000);
 
         const tokenResponse = await fetch(
           `${process.env.REACT_APP_API_URL_BASE}/api/payment/initiate`,
@@ -1502,12 +1519,13 @@ export default function DetailVoyage() {
             method: "POST",
             headers: {
               "Content-Type": "application/x-www-form-urlencoded",
-              "X-API-Key": process.env.REACT_APP_FRONTEND_API_KEY,
-              accept: "application/json",
             },
             body: params.toString(),
+            signal: controller.signal,
           },
         );
+
+        clearTimeout(timeoutId);
 
         if (!tokenResponse.ok) {
           let errorData = null;
@@ -1793,7 +1811,7 @@ export default function DetailVoyage() {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  };;
 
   useEffect(() => {
     // Check if voyage object was passed via navigation state
@@ -1819,7 +1837,7 @@ export default function DetailVoyage() {
               // Formater pour l'affichage
               data.date_voyage =
                 new Date(data.date_voyage.seconds * 1000).toLocaleDateString(
-                  "fr-FR"
+                  "fr-FR",
                 ) +
                 " " +
                 new Date(data.date_voyage.seconds * 1000).toLocaleTimeString(
@@ -1827,7 +1845,7 @@ export default function DetailVoyage() {
                   {
                     hour: "2-digit",
                     minute: "2-digit",
-                  }
+                  },
                 );
             }
             setVoyage(data);
@@ -1848,7 +1866,7 @@ export default function DetailVoyage() {
       collection(db, "voyages"),
       where("date_voyage", ">=", today),
       where("status", "==", "Actif"),
-      orderBy("date_voyage", "desc")
+      orderBy("date_voyage", "desc"),
     );
 
     const querySnapshot = getDocs(q).then((querySnapshot) => {
@@ -2067,7 +2085,7 @@ export default function DetailVoyage() {
                                         {Math.max(
                                           0,
                                           (voyage?.place_disponible_eco || 0) -
-                                            (voyage?.place_prise_eco || 0)
+                                            (voyage?.place_prise_eco || 0),
                                         )}
                                       </span>
                                     </div>
@@ -2081,7 +2099,7 @@ export default function DetailVoyage() {
                                         {Math.max(
                                           0,
                                           (voyage?.place_disponible_vip || 0) -
-                                            (voyage?.place_prise_vip || 0)
+                                            (voyage?.place_prise_vip || 0),
                                         )}
                                       </span>
                                     </div>
@@ -2193,7 +2211,7 @@ export default function DetailVoyage() {
                           {Math.max(
                             0,
                             (voyage?.place_disponible_eco || 0) -
-                              (voyage?.place_prise_eco || 0)
+                              (voyage?.place_prise_eco || 0),
                           )}
                         </p>
                         <p className="mb-0">
@@ -2201,7 +2219,7 @@ export default function DetailVoyage() {
                           {Math.max(
                             0,
                             (voyage?.place_disponible_vip || 0) -
-                              (voyage?.place_prise_vip || 0)
+                              (voyage?.place_prise_vip || 0),
                           )}
                         </p>
                       </div>
@@ -2252,7 +2270,7 @@ export default function DetailVoyage() {
                             className="custom-control-input"
                             id={`trajet_${index}`}
                             checked={reservationForm.trajets_selectionnes.includes(
-                              index
+                              index,
                             )}
                             onChange={(e) =>
                               mettreAJourTrajets(index, e.target.checked)
@@ -2369,7 +2387,8 @@ export default function DetailVoyage() {
                     </div>
                   )}
                   <small className="form-text text-muted">
-                    Format: 07XXXXXXX pour Airtel Money ou 06XXXXXXX pour Moov Money
+                    Format: 07XXXXXXX pour Airtel Money ou 06XXXXXXX pour Moov
+                    Money
                   </small>
                 </div>
 
@@ -2472,7 +2491,7 @@ export default function DetailVoyage() {
                                 mettreAJourPassager(
                                   passager.id,
                                   "type_passager",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                             >
@@ -2490,7 +2509,7 @@ export default function DetailVoyage() {
                                 mettreAJourPassager(
                                   passager.id,
                                   "classe",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                             >
@@ -2513,7 +2532,7 @@ export default function DetailVoyage() {
                                 mettreAJourPassager(
                                   passager.id,
                                   "type_piece",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                             >
@@ -2538,7 +2557,7 @@ export default function DetailVoyage() {
                                 mettreAJourPassager(
                                   passager.id,
                                   "numero_piece",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                               required
@@ -2563,7 +2582,7 @@ export default function DetailVoyage() {
                                 mettreAJourPassager(
                                   passager.id,
                                   "nom",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                               required
@@ -2584,7 +2603,7 @@ export default function DetailVoyage() {
                                 mettreAJourPassager(
                                   passager.id,
                                   "prenom",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                               required
@@ -2608,7 +2627,7 @@ export default function DetailVoyage() {
                                 mettreAJourPassager(
                                   passager.id,
                                   "sexe",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                             >
@@ -2626,7 +2645,7 @@ export default function DetailVoyage() {
                                 mettreAJourPassager(
                                   passager.id,
                                   "telephone",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                               required
@@ -2647,7 +2666,7 @@ export default function DetailVoyage() {
                                 mettreAJourPassager(
                                   passager.id,
                                   "adresse",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                               required

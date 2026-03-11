@@ -1,159 +1,167 @@
-# 🚢 Nat Voyage - Plateforme de Réservation de Transport Maritime
+# Nat Voyage - Plateforme de Réservation de Transport Maritime
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
-![React](https://img.shields.io/badge/React-18.x-61DAFB?logo=react)
-![Firebase](https://img.shields.io/badge/Firebase-9.x-FFCA28?logo=firebase)
+![React](https://img.shields.io/badge/React-19.x-61DAFB?logo=react)
+![Firebase](https://img.shields.io/badge/Firebase-11.x-FFCA28?logo=firebase)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-## 📋 Description
+## Description
 
-**Nat Voyage** est une plateforme web moderne de réservation de billets de transport maritime au Gabon. L'application permet aux utilisateurs de rechercher des voyages, réserver des billets pour plusieurs passagers (adultes, enfants, bébés), et gérer leurs réservations en temps réel.
+**Nat Voyage** est une plateforme web de réservation de billets de transport maritime au Gabon. Elle permet de rechercher des voyages, réserver des billets pour plusieurs passagers (adultes, enfants, bébés), payer par Mobile Money et recevoir ses billets en PDF avec QR Code.
 
-### 🎯 Objectif du Projet
+### Objectif
 
-Digitaliser et simplifier le processus de réservation de billets de transport maritime entre les principales villes du Gabon (Libreville, Port-Gentil, Mitzic, etc.), en offrant une expérience utilisateur fluide et sécurisée.
+Digitaliser le processus de réservation de billets de transport maritime entre les principales villes du Gabon (Libreville, Port-Gentil, Mitzic, etc.).
 
-## ✨ Fonctionnalités Principales
+---
 
-### Pour les Clients
+## Fonctionnalités
 
-- 🔍 **Recherche de Voyages** : Rechercher des voyages par ville de départ, destination et date
-- 🎫 **Réservation Multi-Passagers** : Réserver des billets pour plusieurs passagers en une seule transaction
-- 🔄 **Aller-Retour** : Option de réserver des voyages aller-retour avec détection automatique des correspondances
-- 💺 **Classes de Voyage** : Choisir entre classe Économique et VIP
-- 👶 **Types de Passagers** : Tarifs différenciés pour Adultes, Enfants et Bébés
-- 📄 **Génération de Billets PDF** : Téléchargement automatique des billets avec QR Code
-- 📱 **Responsive Design** : Interface optimisée pour mobile, tablette et desktop
+### Réservation
+- Recherche de voyages par ville de départ, destination et date
+- Réservation multi-passagers en une seule transaction
+- Aller simple et aller-retour avec sélection automatique des voyages de retour
+- Classes de voyage : Économique et VIP
+- Types de passagers avec tarifs différenciés : Adulte, Enfant, Bébé
+- Validation du montant minimum (500 FCFA) avant confirmation
 
-### Gestion des Données
+### Paiement
+- Intégration Mobile Money via API serveur
+- Détection automatique de l'opérateur depuis le numéro de téléphone
+- Suivi du statut de paiement en temps réel (Firestore listener)
+- Gestion des états : En attente, Payé, Échoué
 
-- 🔐 **Authentification Sécurisée** : Système d'authentification Firebase
-- 💾 **Base de Données Temps Réel** : Firestore pour la gestion des données
-- ✅ **Validation des Données** : Vérification automatique des champs et conversion des types
-- 🎟️ **Gestion des Places** : Contrôle en temps réel de la disponibilité des places
-- 🔢 **Numérotation Unique** : Génération automatique de numéros de billets uniques
+### Billets
+- Génération automatique de billets PDF (jsPDF + jspdf-autotable)
+- QR Code unique par passager intégré au PDF
+- Numérotation de billet unique auto-générée
+- Téléchargement automatique après paiement confirmé
 
-## 🛠️ Technologies Utilisées
+### Sécurité
+- Authentification Firebase
+- Rate limiting : 3 tentatives max / 10 secondes, blocage 10 min en cas d'abus
+- Validation des données côté client
+- Headers de sécurité via `.htaccess`
+- HTTPS forcé
+
+---
+
+## Technologies
 
 ### Frontend
+| Technologie | Version | Usage |
+|---|---|---|
+| React | 19.x | Framework UI |
+| React Router | 7.x | Navigation |
+| Bootstrap | 5.x | Design responsive |
+| jsPDF + autotable | 3.x / 5.x | Génération PDF |
+| qrcode | 1.5.x | Génération QR Code |
+| datatables.net-bs5 | 1.x | Tableaux de données |
 
-- **React 18.x** - Framework JavaScript pour l'interface utilisateur
-- **React Router v6** - Navigation et routing
-- **Bootstrap 5** - Framework CSS pour le design responsive
-- **jsPDF** - Génération de PDF pour les billets
-- **QRCode** - Génération de QR Codes sur les billets
+### Backend & Infrastructure
+| Technologie | Usage |
+|---|---|
+| Firebase Authentication | Gestion des utilisateurs |
+| Cloud Firestore | Base de données temps réel |
+| Firebase Storage | Stockage fichiers |
+| API REST (serveur externe) | Initiation des paiements Mobile Money |
 
-### Backend & Database
+---
 
-- **Firebase Authentication** - Gestion des utilisateurs
-- **Cloud Firestore** - Base de données NoSQL en temps réel
-- **Firebase Storage** - Stockage des fichiers
-
-### SEO & Performance
-
-- **Meta Tags Optimisés** - SEO pour les moteurs de recherche
-- **Sitemap.xml** - Plan du site pour l'indexation
-- **Robots.txt** - Configuration pour les crawlers
-- **PWA Ready** - Application Web Progressive
-- **Schema.org JSON-LD** - Données structurées
-
-## 📁 Structure du Projet
+## Structure du Projet
 
 ```
 nat-voyages-client/
 ├── public/
 │   ├── assets/
-│   │   ├── images/        # Images et logos
-│   │   ├── js/           # Scripts JavaScript
-│   │   └── css/          # Styles CSS
-│   ├── index.html        # HTML principal avec SEO
-│   ├── manifest.json     # Configuration PWA
-│   ├── robots.txt        # Configuration robots
-│   ├── sitemap.xml       # Plan du site
-│   └── .htaccess         # Configuration Apache
+│   │   ├── images/           # Images et logos
+│   │   ├── js/               # Scripts JavaScript
+│   │   └── css/              # Styles CSS
+│   ├── index.html            # HTML principal avec balises SEO
+│   ├── manifest.json         # Configuration PWA
+│   ├── robots.txt
+│   ├── sitemap.xml
+│   └── .htaccess             # Configuration Apache (HTTPS, headers sécurité)
 ├── src/
 │   ├── components/
-│   │   ├── NavBarComponent.js      # Barre de navigation
-│   │   └── FooterComponent.js      # Pied de page
-│   ├── pages/
-│   │   ├── Dashboard.js            # Page d'accueil et recherche
-│   │   ├── DetailVoyage.js         # Détails et réservation
-│   │   ├── Conditions.js           # Conditions générales
-│   │   ├── Aide.js                 # Page d'aide
-│   │   └── Contact.js              # Contact
+│   │   ├── NavBarComponent.js
+│   │   └── FooterComponent.js
 │   ├── contexts/
-│   │   └── AuthContext.js          # Contexte d'authentification
-│   ├── firebase.js                 # Configuration Firebase
-│   ├── App.js                      # Composant principal
-│   └── index.js                    # Point d'entrée
-├── SEO-GUIDE.md          # Guide SEO complet
-├── package.json          # Dépendances npm
-└── README.md            # Documentation (ce fichier)
+│   │   └── AuthContext.js    # Contexte auth + hook useAuth()
+│   ├── hooks/
+│   │   └── useRateLimit.js   # Hook anti-abus (3 tentatives / 10s)
+│   ├── pages/
+│   │   ├── Dashboard.js      # Accueil et recherche de voyages
+│   │   ├── DetailVoyage.js   # Détail voyage, réservation, paiement, PDF
+│   │   ├── Conditions.js     # Conditions générales
+│   │   ├── Aide.js           # FAQ / aide
+│   │   └── Contact.js        # Contact
+│   ├── utils/
+│   │   └── transactionHelpers.js  # Utilitaires pour les transactions
+│   ├── firebase.js           # Configuration et exports Firebase
+│   ├── App.js                # Composant racine et routes
+│   └── index.js              # Point d'entrée
+├── package.json
+└── README.md
 ```
 
-## 🚀 Installation et Configuration
+---
+
+## Installation
 
 ### Prérequis
 
-- Node.js (version 14.x ou supérieure)
-- npm ou yarn
-- Compte Firebase
+- Node.js 14.x ou supérieur
+- npm
+- Compte Firebase avec Firestore activé
 
-### 1. Cloner le Projet
+### 1. Cloner le projet
 
 ```bash
 git clone https://github.com/votre-repo/nat-voyages-client.git
 cd nat-voyages-client
 ```
 
-### 2. Installer les Dépendances
+### 2. Installer les dépendances
 
 ```bash
 npm install
 ```
 
-### 3. Configuration Firebase
+### 3. Variables d'environnement
 
-Créez un fichier `src/firebase.js` avec votre configuration Firebase :
+Créez un fichier `.env` à la racine :
 
-```javascript
-import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-
-const firebaseConfig = {
-  apiKey: "VOTRE_API_KEY",
-  authDomain: "VOTRE_AUTH_DOMAIN",
-  projectId: "VOTRE_PROJECT_ID",
-  storageBucket: "VOTRE_STORAGE_BUCKET",
-  messagingSenderId: "VOTRE_MESSAGING_SENDER_ID",
-  appId: "VOTRE_APP_ID",
-};
-
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+```env
+REACT_APP_API_KEY=...
+REACT_APP_AUTH_DOMAIN=...
+REACT_APP_PROJECT_ID=...
+REACT_APP_STORAGE_BUCKET=...
+REACT_APP_MESSAGING_SENDER_ID=...
+REACT_APP_APP_ID=...
+REACT_APP_MEASUREMENT_ID=...
+REACT_APP_API_URL_BASE=https://votre-api.com
 ```
 
-### 4. Lancer l'Application
-
-#### Mode Développement
+### 4. Lancer en développement
 
 ```bash
 npm start
 ```
 
-L'application sera accessible sur [http://localhost:3000](http://localhost:3000)
+Application accessible sur [http://localhost:3000](http://localhost:3000)
 
-#### Build de Production
+### 5. Build de production
 
 ```bash
 npm run build
 ```
 
-Les fichiers optimisés seront générés dans le dossier `build/`
+Les fichiers optimisés sont générés dans `build/`.
 
-## 📊 Structure de la Base de Données (Firestore)
+---
+
+## Modèle de Données Firestore
 
 ### Collection `voyages`
 
@@ -161,7 +169,7 @@ Les fichiers optimisés seront générés dans le dossier `build/`
 {
   libelle_bateau: string,
   date_voyage: timestamp,
-  status: string, // "Actif" ou "Inactif"
+  status: string,              // "Actif" | "Inactif"
   agence_name: string,
   agence_reference: reference,
   place_disponible_eco: number,
@@ -186,155 +194,65 @@ Les fichiers optimisés seront générés dans le dossier `build/`
 }
 ```
 
-### Collection `lieux`
-
-```javascript
-{
-  libelle_lieux: string,
-  statut: string // "active" ou "inactive"
-}
-```
-
 ### Collection `ventes`
 
 ```javascript
 {
   numero_billet: string,
+  id_vente: string,
   noms: string,
   prenoms: string,
   tel: string,
   adresse: string,
-  numero: string, // numéro de pièce
+  numero: string,              // numéro de pièce d'identité
   type_piece: string,
   date_voyage: timestamp,
-  type_passager: string, // "Adulte", "Enfant", "Bébé"
-  classe: string, // "Economie" ou "VIP"
+  type_passager: string,       // "Adulte" | "Enfant" | "Bébé"
+  classe: string,              // "Economie" | "VIP"
   montant_ttc: number,
-  status: string, // "Payer", etc.
-  type_voyage: string, // "aller_simple" ou "aller_retour"
-  sens_voyage: string, // "aller" ou "retour"
+  status: string,              // "Payer" | "En attente" | "Échouer"
+  type_voyage: string,         // "aller_simple" | "aller_retour"
+  sens_voyage: string,         // "aller" | "retour"
   trajet: array,
+  reservationId: string,
+  paymentPending: boolean,
+  paymentInitiated: boolean,
+  paymentInitiatedAt: timestamp,
+  paymentConfirmedAt: timestamp,
   voyage_reference: reference,
   client_reference: reference,
   create_time: timestamp
 }
 ```
 
-## 🔧 Configuration SEO
+### Collection `lieux`
 
-Le projet est entièrement optimisé pour le référencement naturel. Consultez le [Guide SEO](SEO-GUIDE.md) pour plus de détails.
-
-### Points Clés SEO
-
-- ✅ Meta tags optimisés (title, description, keywords)
-- ✅ Open Graph pour réseaux sociaux
-- ✅ Structured Data (Schema.org)
-- ✅ Sitemap.xml et robots.txt
-- ✅ URLs canoniques
-- ✅ Performance optimisée
-
-### Mots-clés Ciblés
-
-- Transport maritime Gabon
-- Bateau Gabon
-- Réservation billet
-- Libreville Port-Gentil
-- Nat Voyage
-
-## 📱 Progressive Web App (PWA)
-
-L'application est configurée comme PWA et peut être installée sur les appareils mobiles :
-
-- ✅ Manifest.json configuré
-- ✅ Service Worker (optionnel)
-- ✅ Mode offline (à implémenter)
-- ✅ Icônes adaptatives
-
-## 🔒 Sécurité
-
-### Mesures de Sécurité Implémentées
-
-- 🔐 Authentification Firebase
-- ✅ Règles de sécurité Firestore
-- ✅ Validation des données côté client
-- ✅ Headers de sécurité (.htaccess)
-- ✅ Protection XSS et CSRF
-- ✅ HTTPS forcé
-
-## 🎨 Design et UX
-
-- **Responsive Design** : Compatible mobile, tablette, desktop
-- **Navigation Fixe** : Navbar fixe lors du scroll
-- **Feedback Visuel** : Messages de confirmation et d'erreur
-- **Loading States** : Indicateurs de chargement
-- **Modal Optimisés** : Interface de réservation claire
-
-## 📈 Améliorations Futures
-
-### Fonctionnalités Prévues
-
-- [ ] Système de paiement en ligne (Mobile Money, Carte bancaire)
-- [ ] Notifications par email/SMS
-- [ ] Historique des réservations pour les clients
-- [ ] Espace client avec profil
-- [ ] Système de fidélité et promotions
-- [ ] Chat en direct avec support client
-- [ ] Mode hors ligne avec synchronisation
-- [ ] Application mobile native (React Native)
-- [ ] Suivi GPS des bateaux en temps réel
-- [ ] Système d'avis et notations
-
-### Optimisations Techniques
-
-- [ ] Lazy loading des images
-- [ ] Code splitting
-- [ ] Service Worker pour cache
-- [ ] Compression d'images automatique
-- [ ] Tests unitaires et d'intégration
-- [ ] CI/CD avec GitHub Actions
-
-## 🐛 Débogage et Support
-
-### Problèmes Courants
-
-**Problème : Les dates s'affichent comme "Timestamp(...)"**
-
-- Solution : Vérifier que `date_voyage` est converti en Date JavaScript
-
-**Problème : Les tarifs sont enregistrés comme chaînes vides**
-
-- Solution : La validation des champs numériques est maintenant implémentée
-
-**Problème : Navbar trop haute**
-
-- Solution : Ajuster `minHeight` dans NavBarComponent.js
-
-## 📞 Contact et Support
-
-- **Email** : contact@natvoyages.ga
-- **Téléphone** : +241-XX-XX-XX-XX
-- **Site Web** : https://www.natvoyages.ga
-
-## 👥 Contributeurs
-
-- **Développeur Principal** : [Votre Nom]
-- **Design** : [Nom Designer]
-- **Product Owner** : [Nom PO]
-
-## 📄 Licence
-
-Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
-
-## 🙏 Remerciements
-
-- React Team pour le framework
-- Firebase pour l'infrastructure backend
-- Bootstrap pour le framework CSS
-- La communauté open source
+```javascript
+{
+  libelle_lieux: string,
+  statut: string               // "active" | "inactive"
+}
+```
 
 ---
 
-**Version** : 1.0.0
-**Dernière mise à jour** : 22 Janvier 2025
+## SEO
+
+- Meta tags optimisés (title, description, keywords)
+- Open Graph pour réseaux sociaux
+- Données structurées Schema.org (JSON-LD)
+- Sitemap.xml et robots.txt
+- URLs canoniques
+
+---
+
+## Contact
+
+- **Email** : contact@natvoyages.ga
+- **Site Web** : https://www.natvoyages.ga
+
+---
+
+**Dernière mise à jour** : Mars 2026
 
 **Made with ❤️ for Gabon** 🇬🇦

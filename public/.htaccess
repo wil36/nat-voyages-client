@@ -72,7 +72,7 @@
   Header set X-Content-Type-Options "nosniff"
 
   # Politique de sécurité du contenu
-  Header set Content-Security-Policy "default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://ajax.googleapis.com; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; font-src 'self' data: https:;"
+  Header set Content-Security-Policy "default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://ajax.googleapis.com; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https://api-secure.natvoyage.org https://*.firebaseio.com https://*.googleapis.com https://*.firebase.google.com wss://*.firebaseio.com;"
 
   # Protection contre le clickjacking
   Header set X-Frame-Options "SAMEORIGIN"

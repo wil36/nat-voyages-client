@@ -870,9 +870,9 @@ export default function DetailVoyage() {
     }
 
     // Vérification du montant minimum
-    if (montantTotal < 500) {
+    if (montantTotal < process.env.MONTANT_MINIMUM_DE_TRANSACTION) {
       alert(
-        `Le montant total (${montantTotal.toLocaleString("fr-FR")} FCFA) est insuffisant.\n\nLe montant minimum pour effectuer une réservation est de 500 FCFA.`,
+        `Le montant total (${montantTotal.toLocaleString("fr-FR")} FCFA) est insuffisant.\n\nLe montant minimum pour effectuer une réservation est de ${process.env.MONTANT_MINIMUM_DE_TRANSACTION} FCFA.`,
       );
       return;
     }

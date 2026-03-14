@@ -283,7 +283,7 @@ Les fichiers optimisés sont générés dans `build/`.
 | # | Description |
 |---|---|
 | 6 | Validation du montant minimum uniquement côté client — à dupliquer côté serveur |
-| 7 | `verifierDisponibilite()` fait un `getDoc` hors transaction — redondant avec la transaction Firestore |
+| 7 | `verifierDisponibilite()` fait un `getDoc` hors transaction — retourne `voyageData` et `placesNecessaires` utilisés dans toute la transaction. La correction consiste à déplacer cette lecture dans `runTransaction()` via `transaction.get()`, mais nécessite une restructuration complète de la transaction |
 | 15 | Manipulation directe du DOM Bootstrap — nécessaire car le modal n'est pas un composant React contrôlé. À refactoriser si le modal est migré |
 
 ---

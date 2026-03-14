@@ -1542,8 +1542,8 @@ export default function DetailVoyage() {
 
         Swal.fire({
           icon: "error",
-          title: "Erreur !",
-          text: "Une erreur est survenue lors de votre paiement. Veuillez réessayer.",
+          title: "Erreur de paiement",
+          html: "Une erreur est survenue lors de votre paiement.<br><br>Veuillez <strong>consulter votre solde Mobile Money</strong> avant de relancer une nouvelle tentative.",
         });
 
         setIsSubmitting(false);
@@ -1586,8 +1586,8 @@ export default function DetailVoyage() {
         if (result.dismiss === Swal.DismissReason.timer) {
           Swal.fire({
             icon: "error",
-            title: "Erreur !",
-            text: "Une erreur est survenue lors du traitement de votre paiement. Veuillez réessayer.",
+            title: "Délai dépassé",
+            html: "Le traitement de votre paiement a expiré.<br><br>Veuillez <strong>consulter votre solde Mobile Money</strong> avant de relancer une nouvelle tentative.",
           });
         }
       });

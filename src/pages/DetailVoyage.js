@@ -909,6 +909,7 @@ export default function DetailVoyage() {
   // Fonction pour soumettre le formulaire avec plusieurs passagers
   const handleTicketSubmit = async (e) => {
     e.preventDefault();
+    let transactionReussie = false;
 
     // VÉRIFICATION RATE LIMIT - 3 tentatives max en 10 secondes
     if (!rateLimit.canProceed) {
@@ -947,12 +948,45 @@ export default function DetailVoyage() {
     // Enregistrer la tentative dans le rate limiter
     rateLimit.recordAttempt();
 
+    let voyageRef = null;
+    let voyageData = null;
+
+    const rollbackPlaces = async () => {
+      if (!voyageRef || !voyageData) return;
+      try {
+        await updateDoc(voyageRef, {
+          place_prise_eco: voyageData.place_prise_eco || 0,
+          place_prise_vip: voyageData.place_prise_vip || 0,
+        });
+        if (
+          reservationForm.type_voyage === "aller_retour" &&
+          reservationForm.voyage_retour_id &&
+          voyageRetourSelectionne
+        ) {
+          const voyageRetourRef = doc(
+            db,
+            "voyages",
+            reservationForm.voyage_retour_id,
+          );
+          await updateDoc(voyageRetourRef, {
+            place_prise_eco: voyageRetourSelectionne.place_prise_eco || 0,
+            place_prise_vip: voyageRetourSelectionne.place_prise_vip || 0,
+          });
+        }
+        console.log("✅ Places remises après erreur post-transaction");
+      } catch (rollbackError) {
+        console.error("❌ Erreur lors du rollback des places:", rollbackError);
+      }
+    };
+
     try {
       // Référence du voyage
-      const voyageRef = doc(db, "voyages", location.state.voyageId);
+      voyageRef = doc(db, "voyages", location.state.voyageId);
 
       // Vérifier la disponibilité des places en temps réel
-      const { voyageData, placesNecessaires } = await verifierDisponibilite();
+      const { voyageData: vd, placesNecessaires } =
+        await verifierDisponibilite();
+      voyageData = vd;
 
       // Trier les passagers : Adultes et Enfants d'abord, Bébés en dernier
       const passagersOrdonnes = [
@@ -1395,6 +1429,7 @@ export default function DetailVoyage() {
 
         return { ventes };
       });
+      transactionReussie = true;
 
       // 5. Générer un ID de réservation unique
       const reservationId =
@@ -1509,6 +1544,8 @@ export default function DetailVoyage() {
         console.log("✅ Token créé avec succès");
       } catch (error) {
         console.error("❌ Erreur création token:", error);
+
+        await rollbackPlaces();
 
         // Mettre à jour le statut de toutes les ventes à "Échoué"
         try {
@@ -1749,6 +1786,9 @@ export default function DetailVoyage() {
       }, 600000); // 10 minutes
     } catch (error) {
       console.error("Erreur lors de l'enregistrement:", error);
+      if (transactionReussie) {
+        await rollbackPlaces();
+      }
       Swal.fire({
         icon: "error",
         title: "Erreur !",

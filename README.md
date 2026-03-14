@@ -66,6 +66,11 @@ Digitaliser le processus de réservation de billets de transport maritime entre 
 | Firebase Storage | Stockage fichiers |
 | API REST (serveur externe) | Initiation des paiements Mobile Money |
 
+### Outils de développement
+| Outil | Usage |
+|---|---|
+| localtunnel (`npx localtunnel`) | Exposition du serveur local en ligne (tests webhooks) |
+
 ---
 
 ## Structure du Projet
@@ -151,7 +156,7 @@ REACT_APP_STATIC_ID_AGENT_NAT_VOYAGE=...
 REACT_APP_STATIC_ID_AGENCE_NAT_VOYAGE=...
 
 # Règles métier
-REACT_APP_MONTANT_MINIMUM_DE_TRANSACTION=500
+REACT_APP_MONTANT_MINIMUM_DE_TRANSACTION=150
 ```
 
 ### 4. Lancer en développement

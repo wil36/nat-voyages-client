@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   collection,
   doc,
@@ -21,6 +21,50 @@ import NavBarComponent from "../components/NavBarComponent";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import FooterComponent from "../components/FooterComponent";
 import { useRateLimit } from "../hooks/useRateLimit";
+
+const nettoyerVente = (vente) => {
+  const numericFields = [
+    "tarif_adulte", "tarif_adulte_vip", "tarif_enfant", "tarif_enfant_vip",
+    "tarif_bb", "tarif_bb_vip", "tva", "oprag", "promotion",
+  ];
+  Object.keys(vente).forEach((key) => {
+    if (vente[key] === undefined || vente[key] === null) {
+      vente[key] = key === "montant_ttc" ? 0 : Array.isArray(vente[key]) ? [] : "";
+    }
+    if (key === "trajet" && Array.isArray(vente[key])) {
+      vente[key] = vente[key].map((trajetItem) => {
+        const cleanedTrajet = {};
+        Object.keys(trajetItem).forEach((trajetKey) => {
+          if (numericFields.includes(trajetKey)) {
+            const value = trajetItem[trajetKey];
+            if (value === "" || value === null || value === undefined) {
+              cleanedTrajet[trajetKey] = 0;
+            } else {
+              const parsed = parseFloat(value);
+              cleanedTrajet[trajetKey] = isNaN(parsed) ? 0 : parsed;
+            }
+          } else {
+            cleanedTrajet[trajetKey] = trajetItem[trajetKey] || "";
+          }
+        });
+        return cleanedTrajet;
+      });
+    }
+  });
+  return vente;
+};
+
+const obtenirTarifTrajet = (trajet, typePassager, classe) => {
+  let tarif = 0;
+  if (typePassager === "Adulte") {
+    tarif = classe === "VIP" ? trajet.tarif_adulte_vip || 0 : trajet.tarif_adulte || 0;
+  } else if (typePassager === "Enfant") {
+    tarif = classe === "VIP" ? trajet.tarif_enfant_vip || 0 : trajet.tarif_enfant || 0;
+  } else if (typePassager === "Bébé") {
+    tarif = classe === "VIP" ? trajet.tarif_bb_vip || 0 : trajet.tarif_bb || 0;
+  }
+  return tarif;
+};
 
 export default function DetailVoyage() {
   const [voyage, setVoyage] = useState(null);
@@ -55,6 +99,16 @@ export default function DetailVoyage() {
   const [montantTotal, setMontantTotal] = useState(0);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const unsubscribeSnapshotRef = useRef(null);
+
+  // Nettoyer le listener Firestore si le composant se démonte
+  useEffect(() => {
+    return () => {
+      if (unsubscribeSnapshotRef.current) {
+        unsubscribeSnapshotRef.current();
+      }
+    };
+  }, []);
   const [voyagesRetour, setVoyagesRetour] = useState([]);
   const [tousLesVoyages, setTousLesVoyages] = useState([]);
   const [loadingVoyagesRetour, setLoadingVoyagesRetour] = useState(false);
@@ -740,29 +794,6 @@ export default function DetailVoyage() {
 
     let total = 0;
 
-    // Fonction pour obtenir le tarif d'un trajet selon le type de passager et la classe
-    const obtenirTarifTrajet = (trajet, typePassager, classe) => {
-      let tarif = 0;
-
-      // Sélectionner le tarif selon le type de passager et la classe
-      if (typePassager === "Adulte") {
-        tarif =
-          classe === "VIP"
-            ? trajet.tarif_adulte_vip || 0
-            : trajet.tarif_adulte || 0;
-      } else if (typePassager === "Enfant") {
-        tarif =
-          classe === "VIP"
-            ? trajet.tarif_enfant_vip || 0
-            : trajet.tarif_enfant || 0;
-      } else if (typePassager === "Bébé") {
-        tarif =
-          classe === "VIP" ? trajet.tarif_bb_vip || 0 : trajet.tarif_bb || 0;
-      }
-
-      return tarif;
-    };
-
     // Calculer le prix pour chaque passager
     reservationForm.passagers.forEach((passager) => {
       let prixPassagerTotal = 0;
@@ -870,9 +901,9 @@ export default function DetailVoyage() {
     }
 
     // Vérification du montant minimum
-    if (montantTotal < process.env.MONTANT_MINIMUM_DE_TRANSACTION) {
+    if (montantTotal < process.env.REACT_APP_MONTANT_MINIMUM_DE_TRANSACTION) {
       alert(
-        `Le montant total (${montantTotal.toLocaleString("fr-FR")} FCFA) est insuffisant.\n\nLe montant minimum pour effectuer une réservation est de ${process.env.MONTANT_MINIMUM_DE_TRANSACTION} FCFA.`,
+        `Le montant total (${montantTotal.toLocaleString("fr-FR")} FCFA) est insuffisant.\n\nLe montant minimum pour effectuer une réservation est de ${process.env.REACT_APP_MONTANT_MINIMUM_DE_TRANSACTION} FCFA.`,
       );
       return;
     }
@@ -1047,30 +1078,6 @@ export default function DetailVoyage() {
             clientReference = clientDocRef.id;
           }
 
-          // Fonction pour obtenir le tarif d'un trajet selon le type de passager et la classe
-          const obtenirTarifTrajet = (trajet, typePassager, classe) => {
-            let tarif = 0;
-
-            if (typePassager === "Adulte") {
-              tarif =
-                classe === "VIP"
-                  ? trajet.tarif_adulte_vip || 0
-                  : trajet.tarif_adulte || 0;
-            } else if (typePassager === "Enfant") {
-              tarif =
-                classe === "VIP"
-                  ? trajet.tarif_enfant_vip || 0
-                  : trajet.tarif_enfant || 0;
-            } else if (typePassager === "Bébé") {
-              tarif =
-                classe === "VIP"
-                  ? trajet.tarif_bb_vip || 0
-                  : trajet.tarif_bb || 0;
-            }
-
-            return tarif;
-          };
-
           // Calculer le montant pour ce passager (aller seulement)
           let montantPassagerAller = 0;
           reservationForm.trajets_selectionnes.forEach((trajetIndex) => {
@@ -1089,12 +1096,6 @@ export default function DetailVoyage() {
           const numeroBilletAller =
             Date.now().toString() +
             Math.random().toString(36).substring(2, 7).toUpperCase();
-          //TODO: Les trajets sélectionnés contiennent des valeurs vides
-          (reservationForm.trajets_selectionnes || []).map((index) =>
-            voyage?.trajet && voyage.trajet[index]
-              ? console.log(voyage.trajet[index])
-              : console.log("Trajet non trouvé"),
-          );
           // Enregistrer la vente pour l'aller
           // Convertir le Timestamp Firestore en objet Date JavaScript
           let dateVoyageAller = new Date();
@@ -1161,52 +1162,7 @@ export default function DetailVoyage() {
             id_vente: numeroBilletAller,
           };
 
-          // Nettoyer les valeurs undefined et null pour l'aller
-          Object.keys(venteAller).forEach((key) => {
-            if (venteAller[key] === undefined || venteAller[key] === null) {
-              if (key === "montant_ttc") {
-                venteAller[key] = 0;
-              } else if (Array.isArray(venteAller[key])) {
-                venteAller[key] = [];
-              } else {
-                venteAller[key] = "";
-              }
-            }
-            // Nettoyer les objets imbriqués dans trajet
-            if (key === "trajet" && Array.isArray(venteAller[key])) {
-              venteAller[key] = venteAller[key].map((trajetItem) => {
-                const cleanedTrajet = {};
-                Object.keys(trajetItem).forEach((trajetKey) => {
-                  // Champs qui doivent être des nombres
-                  const numericFields = [
-                    "tarif_adulte",
-                    "tarif_adulte_vip",
-                    "tarif_enfant",
-                    "tarif_enfant_vip",
-                    "tarif_bb",
-                    "tarif_bb_vip",
-                    "tva",
-                    "oprag",
-                    "promotion",
-                  ];
-
-                  if (numericFields.includes(trajetKey)) {
-                    // Convertir en nombre ou 0 si vide/invalide
-                    const value = trajetItem[trajetKey];
-                    if (value === "" || value === null || value === undefined) {
-                      cleanedTrajet[trajetKey] = 0;
-                    } else {
-                      const parsed = parseFloat(value);
-                      cleanedTrajet[trajetKey] = isNaN(parsed) ? 0 : parsed;
-                    }
-                  } else {
-                    cleanedTrajet[trajetKey] = trajetItem[trajetKey] || "";
-                  }
-                });
-                return cleanedTrajet;
-              });
-            }
-          });
+          nettoyerVente(venteAller);
 
           // Enregistrer la vente aller
           const venteAllerDocRef = doc(collection(db, "ventes"));
@@ -1352,56 +1308,7 @@ export default function DetailVoyage() {
               id_vente: numeroBilletRetour,
             };
 
-            // Nettoyer les valeurs undefined et null pour le retour
-            Object.keys(venteRetour).forEach((key) => {
-              if (venteRetour[key] === undefined || venteRetour[key] === null) {
-                if (key === "montant_ttc") {
-                  venteRetour[key] = 0;
-                } else if (Array.isArray(venteRetour[key])) {
-                  venteRetour[key] = [];
-                } else {
-                  venteRetour[key] = "";
-                }
-              }
-              // Nettoyer les objets imbriqués dans trajet
-              if (key === "trajet" && Array.isArray(venteRetour[key])) {
-                venteRetour[key] = venteRetour[key].map((trajetItem) => {
-                  const cleanedTrajet = {};
-                  Object.keys(trajetItem).forEach((trajetKey) => {
-                    // Champs qui doivent être des nombres
-                    const numericFields = [
-                      "tarif_adulte",
-                      "tarif_adulte_vip",
-                      "tarif_enfant",
-                      "tarif_enfant_vip",
-                      "tarif_bb",
-                      "tarif_bb_vip",
-                      "tva",
-                      "oprag",
-                      "promotion",
-                    ];
-
-                    if (numericFields.includes(trajetKey)) {
-                      // Convertir en nombre ou 0 si vide/invalide
-                      const value = trajetItem[trajetKey];
-                      if (
-                        value === "" ||
-                        value === null ||
-                        value === undefined
-                      ) {
-                        cleanedTrajet[trajetKey] = 0;
-                      } else {
-                        const parsed = parseFloat(value);
-                        cleanedTrajet[trajetKey] = isNaN(parsed) ? 0 : parsed;
-                      }
-                    } else {
-                      cleanedTrajet[trajetKey] = trajetItem[trajetKey] || "";
-                    }
-                  });
-                  return cleanedTrajet;
-                });
-              }
-            });
+            nettoyerVente(venteRetour);
 
             // Enregistrer la vente retour
             const venteRetourDocRef = doc(collection(db, "ventes"));
@@ -1657,7 +1564,7 @@ export default function DetailVoyage() {
         where("reservationId", "==", reservationId),
       );
 
-      const unsubscribe = onSnapshot(ventesQuery, (snapshot) => {
+      unsubscribeSnapshotRef.current = onSnapshot(ventesQuery, (snapshot) => {
         snapshot.docChanges().forEach((change) => {
           if (change.type === "modified") {
             const venteData = change.doc.data();
@@ -1697,7 +1604,7 @@ export default function DetailVoyage() {
               }).then({});
 
               // Désabonner immédiatement pour éviter les doublons
-              unsubscribe();
+              if (unsubscribeSnapshotRef.current) unsubscribeSnapshotRef.current();
 
               // Récupérer toutes les ventes de cette réservation
               getDocs(ventesQuery).then((ventesSnapshot) => {
@@ -1802,8 +1709,7 @@ export default function DetailVoyage() {
 
       // Nettoyer l'écouteur après 10 minutes (timeout de sécurité)
       setTimeout(() => {
-        unsubscribe();
-        console.log("⏱️ Timeout: Arrêt de l'écoute des changements");
+        if (unsubscribeSnapshotRef.current) unsubscribeSnapshotRef.current();
       }, 600000); // 10 minutes
     } catch (error) {
       console.error("Erreur lors de l'enregistrement:", error);
@@ -1811,7 +1717,7 @@ export default function DetailVoyage() {
     } finally {
       setIsSubmitting(false);
     }
-  };;
+  };
 
   useEffect(() => {
     // Check if voyage object was passed via navigation state

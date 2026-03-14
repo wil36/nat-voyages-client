@@ -261,29 +261,30 @@ Les fichiers optimisés sont générés dans `build/`.
 
 ### ✅ Corrections appliquées
 
-| # | Fichier | Description | Statut |
-|---|---|---|---|
-| 1 | `DetailVoyage.js` | Variable `numeroReference` non définie dans `genererFacturePDF` — remplacée par `donneesVente.numero_billet \|\| venteId` | ✅ Corrigé |
-| 2 | `DetailVoyage.js` | `paymentToken` volontairement `null` côté client — le token est récupéré par le backend via webhook et mis à jour dans Firestore via `onSnapshot` | ✅ Comportement normal |
-| 3 | `DetailVoyage.js` | Mauvais préfixe env var : `MONTANT_MINIMUM_DE_TRANSACTION` → `REACT_APP_MONTANT_MINIMUM_DE_TRANSACTION` | ✅ Corrigé |
-| 4 | `DetailVoyage.js` | `Swal` disponible globalement via le template CSS — pas d'import JS nécessaire | ✅ Comportement normal |
-| 5 | `DetailVoyage.js` | Double point-virgule `;;` en fin de `handleTicketSubmit` | ✅ Corrigé |
-| 8 | `DetailVoyage.js` | Listener `onSnapshot` non nettoyé si le composant se démonte — fuite mémoire | ✅ Corrigé via `useRef` + cleanup `useEffect` |
-| 9 | `DetailVoyage.js` | Fonction `obtenirTarifTrajet` définie deux fois dans le composant | ✅ Extraite hors du composant |
-| 10 | `DetailVoyage.js` | Code de nettoyage des données `vente` copié-collé pour aller et retour | ✅ Extrait en `nettoyerVente()` |
-| 13 | `DetailVoyage.js` | `.map()` utilisé pour un effet de bord (`console.log`) | ✅ Supprimé |
-| 16 | `DetailVoyage.js` | Commentaire `TODO` laissé en production | ✅ Supprimé |
+| # | Description |
+|---|---|
+| 1 | `genererFacturePDF` : variable `numeroReference` non définie → remplacée par `donneesVente.numero_billet \|\| venteId` |
+| 3 | Env var `MONTANT_MINIMUM_DE_TRANSACTION` → `REACT_APP_MONTANT_MINIMUM_DE_TRANSACTION` |
+| 5 | Double `;;` en fin de `handleTicketSubmit` supprimé |
+| 8 | Fuite mémoire listener `onSnapshot` → corrigé via `useRef` + cleanup `useEffect` |
+| 9 | `obtenirTarifTrajet` dupliquée → extraite hors du composant |
+| 10 | Nettoyage données `vente` dupliqué → extrait en `nettoyerVente()` |
+| 11 | `useEffect` dépendances instables → stabilisé via sérialisation du tableau en string |
+| 12 | `recupererVoyagesRetour()` appelée trop tôt → appel redondant supprimé, le `useEffect` prend le relais |
+| 13 | `.map()` utilisé pour un effet de bord (`console.log`) → supprimé |
+| 14 | `alert()` natif → remplacé par `Swal.fire()` uniformément |
+| 16 | Commentaire `TODO` en production → supprimé |
+| — | `genererFacturePDF` / `genererFactureMultiPassagers` : date affichée comme `N/A` ou Timestamp brut → conversion Firestore Timestamp corrigée |
+| — | `validateForm` : crash `Cannot read properties of undefined (reading 'trim')` → guards `\|\| ""` ajoutés sur tous les champs |
+| — | Réinitialisation du formulaire après paiement : champ `numero_paiement_mobile` manquant → ajouté |
 
-### 🟠 Problèmes à traiter
+### 🟠 Problèmes à traiter (backend / refactoring majeur)
 
-| # | Fichier | Description |
-|---|---|---|
-| 6 | `DetailVoyage.js` | Vérification du montant minimum uniquement côté client — doit aussi être validée côté serveur |
-| 7 | `DetailVoyage.js` | `verifierDisponibilite()` fait un `getDoc` hors transaction — redondant et potentiellement incohérent avec la transaction Firestore |
-| 11 | `DetailVoyage.js` | `useEffect` avec dépendances instables (tableaux recréés à chaque render) |
-| 12 | `DetailVoyage.js` | `recupererVoyagesRetour()` appelée avant que `setReservationForm` soit appliqué (state asynchrone) |
-| 14 | `DetailVoyage.js` | `alert()` natif mélangé avec `Swal.fire()` — uniformiser avec SweetAlert2 |
-| 15 | `DetailVoyage.js` | Manipulation directe du DOM Bootstrap (`classList`, `style`) — anti-pattern React |
+| # | Description |
+|---|---|
+| 6 | Validation du montant minimum uniquement côté client — à dupliquer côté serveur |
+| 7 | `verifierDisponibilite()` fait un `getDoc` hors transaction — redondant avec la transaction Firestore |
+| 15 | Manipulation directe du DOM Bootstrap — nécessaire car le modal n'est pas un composant React contrôlé. À refactoriser si le modal est migré |
 
 ---
 

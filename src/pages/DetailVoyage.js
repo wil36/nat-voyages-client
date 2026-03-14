@@ -255,12 +255,11 @@ export default function DetailVoyage() {
         typeVoyage === "aller_simple" ? "" : prev.voyage_retour_id,
     }));
 
-    if (typeVoyage === "aller_retour") {
-      recupererVoyagesRetour();
-    } else {
+    if (typeVoyage === "aller_simple") {
       setVoyagesRetour([]);
       setVoyageRetourSelectionne(null);
     }
+    // Pour aller_retour, le useEffect sur trajets_selectionnes/type_voyage prend le relais
   };
 
   // Fonction pour gérer la sélection du voyage de retour
@@ -327,16 +326,19 @@ export default function DetailVoyage() {
   };
 
   // Effect pour surveiller les changements de trajets sélectionnés et relancer la recherche des voyages retour
+  // On sérialise le tableau en string pour avoir une dépendance stable (les tableaux sont toujours !== en JS)
+  const trajetsKey = reservationForm.trajets_selectionnes.join(",");
+  const typeVoyage = reservationForm.type_voyage;
   useEffect(() => {
-    if (reservationForm.type_voyage === "aller_retour") {
-      if (reservationForm.trajets_selectionnes.length > 0) {
+    if (typeVoyage === "aller_retour") {
+      if (trajetsKey.length > 0) {
         recupererVoyagesRetour();
       } else {
         setVoyagesRetour([]);
         setVoyageRetourSelectionne(null);
       }
     }
-  }, [reservationForm.trajets_selectionnes, reservationForm.type_voyage]);
+  }, [trajetsKey, typeVoyage]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fonction pour générer et télécharger le reçu PDF
   const genererFacturePDF = async (
@@ -389,9 +391,30 @@ export default function DetailVoyage() {
       dernierTrajet?.lieu_arrivee ||
       "N/A";
 
+    let dateVoyageFormatee = "N/A";
+    if (donneesVente?.date_voyage) {
+      let dateObj = donneesVente.date_voyage;
+      if (dateObj?.seconds) {
+        dateObj = new Date(dateObj.seconds * 1000);
+      } else if (dateObj?.toDate) {
+        dateObj = dateObj.toDate();
+      }
+      if (dateObj instanceof Date && !isNaN(dateObj)) {
+        dateVoyageFormatee =
+          dateObj.toLocaleDateString("fr-FR") +
+          " " +
+          dateObj.toLocaleTimeString("fr-FR", {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+      } else if (typeof donneesVente.date_voyage === "string") {
+        dateVoyageFormatee = donneesVente.date_voyage;
+      }
+    }
+
     doc.text(`Ville de départ : ${villeDepart}`, 20, 72);
     doc.text(`Ville d'arrivée : ${villeArrivee}`, 20, 78);
-    doc.text(`Date de voyage : ${voyage?.date_voyage || "N/A"}`, 20, 84);
+    doc.text(`Date de voyage : ${dateVoyageFormatee}`, 20, 84);
     doc.text("Franchise de bagage : 20kgs", 20, 90);
 
     // Réservation
@@ -526,7 +549,7 @@ export default function DetailVoyage() {
         doc.setFont("helvetica", "normal");
         doc.text(`Agence: ${vente.agence_name || "Agence Principale"}`, 20, 28);
         doc.text("Tél: +225 XX XX XX XX", 20, 34);
-        doc.text("Email: contact@natvoyages.ci", 20, 40);
+        doc.text("Email: contact@natvoyage.org", 20, 40);
 
         // Ligne séparatrice
         doc.line(20, 45, 190, 45);
@@ -555,11 +578,17 @@ export default function DetailVoyage() {
         // Formater la date de voyage
         let dateVoyageFormatee = "N/A";
         if (vente?.date_voyage) {
-          if (vente.date_voyage instanceof Date) {
+          let dateObj = vente.date_voyage;
+          if (dateObj?.seconds) {
+            dateObj = new Date(dateObj.seconds * 1000);
+          } else if (dateObj?.toDate) {
+            dateObj = dateObj.toDate();
+          }
+          if (dateObj instanceof Date && !isNaN(dateObj)) {
             dateVoyageFormatee =
-              vente.date_voyage.toLocaleDateString("fr-FR") +
+              dateObj.toLocaleDateString("fr-FR") +
               " " +
-              vente.date_voyage.toLocaleTimeString("fr-FR", {
+              dateObj.toLocaleTimeString("fr-FR", {
                 hour: "2-digit",
                 minute: "2-digit",
               });
@@ -696,7 +725,7 @@ export default function DetailVoyage() {
     }
 
     // Vérifier le numéro de paiement mobile
-    if (!reservationForm.numero_paiement_mobile.trim()) {
+    if (!(reservationForm.numero_paiement_mobile || "").trim()) {
       newErrors.numero_paiement_mobile =
         "Le numéro de paiement Mobile Money est obligatoire";
     } else {
@@ -730,9 +759,11 @@ export default function DetailVoyage() {
 
     // Vérifier qu'il y a au moins un adulte si des bébés sont présents
     if (bebes.length > 0 && adultes.length === 0) {
-      alert(
-        "❌ Il doit y avoir au moins un adulte pour accompagner les bébés !",
-      );
+      Swal.fire({
+        icon: "error",
+        title: "Erreur !",
+        text: "Il doit y avoir au moins un adulte pour accompagner les bébés !",
+      });
       return false;
     }
 
@@ -740,20 +771,20 @@ export default function DetailVoyage() {
     reservationForm.passagers.forEach((passager, index) => {
       const passagerErrors = {};
 
-      if (!passager.nom.trim()) {
+      if (!(passager.nom || "").trim()) {
         passagerErrors.nom = "Le nom est obligatoire";
       }
-      if (!passager.prenom.trim()) {
+      if (!(passager.prenom || "").trim()) {
         passagerErrors.prenom = "Le prénom est obligatoire";
       }
-      if (!passager.numero_piece.trim()) {
+      if (!(passager.numero_piece || "").trim()) {
         passagerErrors.numero_piece =
           "Le numéro de pièce d'identité est obligatoire";
       }
-      if (!passager.telephone.trim()) {
+      if (!(passager.telephone || "").trim()) {
         passagerErrors.telephone = "Le numéro de téléphone est obligatoire";
       }
-      if (!passager.adresse.trim()) {
+      if (!(passager.adresse || "").trim()) {
         passagerErrors.adresse = "L'adresse est obligatoire";
       }
 
@@ -885,13 +916,14 @@ export default function DetailVoyage() {
       const minutes = Math.floor(blockTimeSeconds / 60);
       const seconds = blockTimeSeconds % 60;
 
-      alert(
-        `🚫 ACCÈS BLOQUÉ - Trop de tentatives\n\n` +
-          `Vous avez dépassé la limite de 3 tentatives en 10 secondes.\n\n` +
-          `⏱️ Temps restant avant déblocage: ${minutes}m ${seconds}s\n\n` +
-          `Cette mesure de sécurité protège le système contre les abus.\n` +
-          `Veuillez patienter avant de réessayer.`,
-      );
+      Swal.fire({
+        icon: "error",
+        title: "Accès bloqué",
+        html:
+          `Vous avez dépassé la limite de 3 tentatives en 10 secondes.<br><br>` +
+          `<strong>⏱️ Temps restant avant déblocage : ${minutes}m ${seconds}s</strong><br><br>` +
+          `Cette mesure de sécurité protège le système contre les abus.<br>Veuillez patienter avant de réessayer.`,
+      });
       return;
     }
 
@@ -902,9 +934,11 @@ export default function DetailVoyage() {
 
     // Vérification du montant minimum
     if (montantTotal < process.env.REACT_APP_MONTANT_MINIMUM_DE_TRANSACTION) {
-      alert(
-        `Le montant total (${montantTotal.toLocaleString("fr-FR")} FCFA) est insuffisant.\n\nLe montant minimum pour effectuer une réservation est de ${process.env.REACT_APP_MONTANT_MINIMUM_DE_TRANSACTION} FCFA.`,
-      );
+      Swal.fire({
+        icon: "warning",
+        title: "Montant insuffisant",
+        html: `Le montant total (<strong>${montantTotal.toLocaleString("fr-FR")} FCFA</strong>) est insuffisant.<br><br>Le montant minimum pour effectuer une réservation est de <strong>${process.env.REACT_APP_MONTANT_MINIMUM_DE_TRANSACTION} FCFA</strong>.`,
+      });
       return;
     }
 
@@ -1528,7 +1562,7 @@ export default function DetailVoyage() {
           montantTotal.toLocaleString() +
           " FCFA</p>" +
           '<p style="margin: 5px 0;"><strong>📱 Téléphone:</strong> ' +
-          reservationForm.passagers[0].telephone +
+          reservationForm.numero_paiement_mobile +
           "</p>" +
           '<p style="margin: 5px 0;"><strong>🔑 Référence:</strong> ' +
           reservationId +
@@ -1604,7 +1638,8 @@ export default function DetailVoyage() {
               }).then({});
 
               // Désabonner immédiatement pour éviter les doublons
-              if (unsubscribeSnapshotRef.current) unsubscribeSnapshotRef.current();
+              if (unsubscribeSnapshotRef.current)
+                unsubscribeSnapshotRef.current();
 
               // Récupérer toutes les ventes de cette réservation
               getDocs(ventesQuery).then((ventesSnapshot) => {
@@ -1633,6 +1668,7 @@ export default function DetailVoyage() {
                 // Réinitialiser le formulaire
                 setReservationForm({
                   type_voyage: "aller_simple",
+                  numero_paiement_mobile: "",
                   trajets_selectionnes: [],
                   voyage_retour_id: "",
                   passagers: [
@@ -1713,7 +1749,11 @@ export default function DetailVoyage() {
       }, 600000); // 10 minutes
     } catch (error) {
       console.error("Erreur lors de l'enregistrement:", error);
-      alert(`Erreur lors de l'enregistrement des billets: ${error.message}`);
+      Swal.fire({
+        icon: "error",
+        title: "Erreur !",
+        text: `Erreur lors de l'enregistrement des billets: ${error.message}`,
+      });
     } finally {
       setIsSubmitting(false);
     }

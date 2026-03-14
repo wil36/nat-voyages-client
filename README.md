@@ -133,6 +133,7 @@ npm install
 Créez un fichier `.env` à la racine :
 
 ```env
+# Firebase
 REACT_APP_API_KEY=...
 REACT_APP_AUTH_DOMAIN=...
 REACT_APP_PROJECT_ID=...
@@ -140,7 +141,17 @@ REACT_APP_STORAGE_BUCKET=...
 REACT_APP_MESSAGING_SENDER_ID=...
 REACT_APP_APP_ID=...
 REACT_APP_MEASUREMENT_ID=...
+
+# API paiement
 REACT_APP_API_URL_BASE=https://votre-api.com
+REACT_APP_FRONTEND_API_KEY=...
+
+# Référentiels statiques
+REACT_APP_STATIC_ID_AGENT_NAT_VOYAGE=...
+REACT_APP_STATIC_ID_AGENCE_NAT_VOYAGE=...
+
+# Règles métier
+REACT_APP_MONTANT_MINIMUM_DE_TRANSACTION=500
 ```
 
 ### 4. Lancer en développement
@@ -243,6 +254,41 @@ Les fichiers optimisés sont générés dans `build/`.
 - Données structurées Schema.org (JSON-LD)
 - Sitemap.xml et robots.txt
 - URLs canoniques
+
+---
+
+## Revue de code & Problèmes connus
+
+### 🔴 Bugs critiques
+
+| # | Fichier | Description |
+|---|---|---|
+| 1 | `DetailVoyage.js:419` | Variable `numeroReference` non définie dans `genererFacturePDF` — provoque une `ReferenceError` à l'exécution |
+| 2 | `DetailVoyage.js:1565` | `paymentToken` volontairement `null` côté client — le token est récupéré par le backend via webhook et le statut est mis à jour dans Firestore (suivi via `onSnapshot`) |
+| 3 | `DetailVoyage.js:873` | Mauvais préfixe env var : `process.env.MONTANT_MINIMUM_DE_TRANSACTION` → doit être `REACT_APP_MONTANT_MINIMUM_DE_TRANSACTION` |
+| 4 | `DetailVoyage.js:1602` | `Swal` (SweetAlert2) utilisé sans être importé |
+| 5 | `DetailVoyage.js:1814` | Double point-virgule `;;` en fin de fonction (`handleTicketSubmit`) |
+
+### 🟠 Problèmes importants
+
+| # | Fichier | Description |
+|---|---|---|
+| 6 | `DetailVoyage.js:873` | Vérification du montant minimum uniquement côté client — doit aussi être validée côté serveur |
+| 7 | `DetailVoyage.js:804` | `verifierDisponibilite()` fait un `getDoc` hors transaction — redondant et potentiellement incohérent avec la transaction Firestore |
+| 8 | `DetailVoyage.js:1660` | Listener `onSnapshot` non nettoyé si le composant se démonte avant le timeout de 10 min (fuite mémoire) |
+| 9 | `DetailVoyage.js:744` & `1051` | Fonction `obtenirTarifTrajet` définie deux fois — à extraire en dehors du composant |
+| 10 | `DetailVoyage.js:1164` & `1356` | Code de nettoyage des données `vente` copié-collé pour aller et retour — à extraire en `nettoyerVente()` |
+
+### 🟡 Problèmes mineurs
+
+| # | Fichier | Description |
+|---|---|---|
+| 11 | `DetailVoyage.js:285` | `useEffect` avec dépendances instables (tableaux recréés à chaque render) |
+| 12 | `DetailVoyage.js:205` | `recupererVoyagesRetour()` appelée avant que `setReservationForm` soit appliqué (state asynchrone) |
+| 13 | `DetailVoyage.js:1093` | `.map()` utilisé pour un effet de bord (`console.log`) — utiliser `.forEach()` |
+| 14 | `DetailVoyage.js:679` & `1810` | `alert()` natif mélangé avec `Swal.fire()` — uniformiser avec SweetAlert2 |
+| 15 | `DetailVoyage.js:1755` | Manipulation directe du DOM Bootstrap (`classList`, `style`) — anti-pattern React, gérer via `useState` |
+| 16 | `DetailVoyage.js:1092` | Commentaire `TODO` laissé en production |
 
 ---
 

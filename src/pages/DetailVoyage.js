@@ -416,7 +416,7 @@ export default function DetailVoyage() {
     }
 
     return {
-      numeroFacture: numeroReference,
+      numeroFacture: donneesVente.numero_billet || venteId,
       dateFacture: new Date().toLocaleDateString("fr-FR"),
       client: donneesVente.client_name,
       montant: donneesVente.montant_ttc,
@@ -1507,7 +1507,6 @@ export default function DetailVoyage() {
         // params.append("amount", 500);
         params.append("operatorCode", operatorCode);
         params.append("reservationId", reservationId);
-        params.append("apiKey", process.env.REACT_APP_FRONTEND_API_KEY);
 
         // AbortController avec timeout de 60 secondes (l'API de paiement peut être lente)
         const controller = new AbortController();
@@ -1519,6 +1518,7 @@ export default function DetailVoyage() {
             method: "POST",
             headers: {
               "Content-Type": "application/x-www-form-urlencoded",
+              "X-Api-Key": process.env.REACT_APP_FRONTEND_API_KEY,
             },
             body: params.toString(),
             signal: controller.signal,
@@ -1565,7 +1565,7 @@ export default function DetailVoyage() {
         // const tokenData = await tokenResponse.json();
         // paymentToken = tokenData.token; // Adapter selon la structure de votre réponse
 
-        console.log("✅ Token créé avec succès:", paymentToken);
+        console.log("✅ Token créé avec succès");
       } catch (error) {
         console.error("❌ Erreur création token:", error);
 
